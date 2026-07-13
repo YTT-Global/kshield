@@ -90,13 +90,3 @@ This is required because Rolldown (Vite 8's bundler) strips type-only exports at
 The theme state lives in `App.tsx` and is written to `localStorage` under the key `kshield-theme`. Default is `dark`.
 
 The sidebar sun/moon button calls `toggleTheme()` which adds or removes the `dark` class on `<html>`.
-
----
-
-## Connecting to the Backend
-
-All data in the current build is hardcoded mock data in `Dashboard.tsx`. To connect to the live FastAPI backend:
-
-1. Start the backend: `uvicorn app.main:app --reload --port 8000` (from `../backend/`)
-2. Replace the `useState` mock arrays in `Dashboard.tsx` with `useEffect` fetch calls to `http://localhost:8000/api/v1/scans`
-3. The TypeScript types in `src/types/scan.ts` already match the backend response shape

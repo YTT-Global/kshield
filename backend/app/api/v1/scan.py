@@ -14,10 +14,10 @@ from app.models.vulnerabilities import Vulnerability
 
 router = APIRouter(prefix="/scan", tags=["Scanning Diagnostics"])
 
-class CodeExecutionPayload(BaseModel):
-    filename: str = Field(..., example="server.py")
-    content: str = Field(..., example="import os\napi_key = 'ghp_secret'")
-    commit_sha: Optional[str] = Field(None, example="a1b2c3d4")
+class ScanRequest(BaseModel):
+    filename: str = Field(...)
+    content: str = Field(...)
+    commit_sha: Optional[str] = Field(None)
 
 @router.post("", response_model=dict)
 async def process_code_pipeline_evaluation(payload: CodeExecutionPayload, db: AsyncSession = Depends(get_db_session)):
