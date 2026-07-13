@@ -26,7 +26,7 @@ curl -fsSL https://raw.githubusercontent.com/YTTGlobalServices/kshield/main/inst
 
 **Homebrew (macOS):**
 ```bash
-brew install ytt-global/tap/kshield
+brew install mesrikanthreddy/tap/kshield
 ```
 
 **npm / npx (JavaScript developers):**
