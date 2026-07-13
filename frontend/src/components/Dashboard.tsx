@@ -32,42 +32,15 @@ function DiffViewer({ diff }: { diff: string }) {
 
 export const Dashboard: React.FC = () => {
   const [telemetry] = useState<GlobalTelemetry>({
-    totalScans: 12,
-    cleanFiles: 9,
-    openVulnerabilities: 3,
-    breakdown: { critical: 1, high: 1, medium: 1, low: 0 },
+    totalScans: 0,
+    cleanFiles: 0,
+    openVulnerabilities: 0,
+    breakdown: { critical: 0, high: 0, medium: 0, low: 0 },
   });
 
-  const [scans] = useState<ScanResult[]>([
-    {
-      scan_id: 's1',
-      filename: 'app/api/v1/auth.py',
-      safe: false,
-      vulnerabilities_discovered: 2,
-      anomalies: [
-        {
-          id: 'v1', line: 14, type: 'Hardcoded Secret', severity: 'CRITICAL',
-          description: 'Exposed credential match: Identified potential AWS Access Key assignment pattern.',
-          remediation: {
-            explanation: 'ELI5: The firewall found a plain-text security key hardcoded in the source. Move it into an environment variable so it never touches source control.',
-            patch_diff: '--- a/app/api/v1/auth.py\n+++ b/app/api/v1/auth.py\n@@ -14,1 +14,1 @@\n-AWS_KEY = "AKIAIOSFODNN7EXAMPLE"\n+AWS_KEY = os.getenv("AWS_ACCESS_KEY_ID")',
-          },
-        },
-        {
-          id: 'v2', line: 32, type: 'Broken Access Control', severity: 'HIGH',
-          description: 'The routing handler acts as an open endpoint with no explicit Depends() authorization guard.',
-          remediation: {
-            explanation: 'ELI5: This route is publicly accessible. We wrapped it with an authentication guard so only verified users can call it.',
-            patch_diff: "--- a/app/api/v1/auth.py\n+++ b/app/api/v1/auth.py\n@@ -32,1 +32,2 @@\n+@app.get('/secure-data', dependencies=[Depends(AuthGuard)])\n def get_secure_data():",
-          },
-        },
-      ],
-    },
-    { scan_id: 's2', filename: 'services/payment.py', safe: true,  vulnerabilities_discovered: 0, anomalies: [] },
-    { scan_id: 's3', filename: 'models/user.py',      safe: true,  vulnerabilities_discovered: 0, anomalies: [] },
-  ]);
+  const [scans] = useState<ScanResult[]>([]);
 
-  const [selectedScan, setSelectedScan] = useState<ScanResult | null>(scans[0] || null);
+  const [selectedScan, setSelectedScan] = useState<ScanResult | null>(null);
   const [drawerOpen, setDrawerOpen]       = useState(false);
   const [drawerAnomaly, setDrawerAnomaly] = useState<Anomaly | null>(null);
 
@@ -153,29 +126,41 @@ export const Dashboard: React.FC = () => {
               <span className="text-[11px] font-mono bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-2 py-0.5 rounded-full">{scans.length}</span>
             </div>
             <div className="overflow-y-auto flex-1 divide-y divide-slate-100 dark:divide-slate-800">
-              {scans.map(scan => (
-                <button
-                  key={scan.scan_id}
-                  onClick={() => setSelectedScan(scan)}
-                  className={`w-full px-4 py-3.5 text-left flex items-center justify-between gap-3 transition-colors duration-100 ${
-                    selectedScan?.scan_id === scan.scan_id
-                      ? 'bg-slate-50 dark:bg-slate-800/60'
-                      : 'hover:bg-slate-50/80 dark:hover:bg-slate-800/30'
-                  }`}
-                >
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <span className={`h-1.5 w-1.5 rounded-full flex-shrink-0 ${scan.safe ? 'bg-emerald-500' : 'bg-red-500'}`} />
-                    <span className="text-sm font-mono text-slate-700 dark:text-slate-200 truncate">{scan.filename}</span>
+              {scans.length > 0 ? (
+                scans.map(scan => (
+                  <button
+                    key={scan.scan_id}
+                    onClick={() => setSelectedScan(scan)}
+                    className={`w-full px-4 py-3.5 text-left flex items-center justify-between gap-3 transition-colors duration-100 ${
+                      selectedScan?.scan_id === scan.scan_id
+                        ? 'bg-slate-50 dark:bg-slate-800/60'
+                        : 'hover:bg-slate-50/80 dark:hover:bg-slate-800/30'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <span className={`h-1.5 w-1.5 rounded-full flex-shrink-0 ${scan.safe ? 'bg-emerald-500' : 'bg-red-500'}`} />
+                      <span className="text-sm font-mono text-slate-700 dark:text-slate-200 truncate">{scan.filename}</span>
+                    </div>
+                    <span className={`text-[10px] font-semibold font-mono px-2 py-0.5 rounded-full flex-shrink-0 ${
+                      scan.safe
+                        ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400'
+                        : 'bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-400'
+                    }`}>
+                      {scan.safe ? 'Safe' : `${scan.vulnerabilities_discovered} flaws`}
+                    </span>
+                  </button>
+                ))
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full p-6 text-center">
+                  <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-3">
+                    <ScanEye size={20} className="text-slate-400 dark:text-slate-500" />
                   </div>
-                  <span className={`text-[10px] font-semibold font-mono px-2 py-0.5 rounded-full flex-shrink-0 ${
-                    scan.safe
-                      ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400'
-                      : 'bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-400'
-                  }`}>
-                    {scan.safe ? 'Safe' : `${scan.vulnerabilities_discovered} flaws`}
-                  </span>
-                </button>
-              ))}
+                  <p className="text-xs font-medium text-slate-500 dark:text-slate-400">No scans yet</p>
+                  <p className="text-[10px] text-slate-400 dark:text-slate-600 mt-1 max-w-[120px]">
+                    Run <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded">kshield scan</code> to start.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 
