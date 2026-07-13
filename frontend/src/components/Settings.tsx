@@ -16,18 +16,11 @@ const SEVERITY: Record<string, string> = {
   LOW:      'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-400 dark:border-blue-900',
 };
 
-const INITIAL_RULES: RuleConfig[] = [
-  { id: 'hardcoded-secrets', label: 'Hardcoded Secrets',    description: 'Detect API keys, tokens, and passwords embedded in source code.',         enabled: true,  severity: 'CRITICAL' },
-  { id: 'broken-access',    label: 'Broken Access Control', description: 'Flag endpoints missing authentication or authorization guards.',            enabled: true,  severity: 'HIGH'     },
-  { id: 'sql-injection',    label: 'SQL Injection Vectors', description: 'Identify unsanitised user input passed directly into query strings.',       enabled: true,  severity: 'HIGH'     },
-  { id: 'insecure-deps',    label: 'Insecure Dependencies', description: 'Cross-reference imported packages against known CVE databases.',             enabled: true,  severity: 'MEDIUM'   },
-  { id: 'xss-vectors',      label: 'XSS Sink Detection',   description: 'Trace untrusted data flowing into DOM write operations.',                   enabled: false, severity: 'MEDIUM'   },
-  { id: 'path-traversal',   label: 'Path Traversal',       description: 'Detect file path construction from user-supplied strings.',                 enabled: true,  severity: 'HIGH'     },
-];
+const INITIAL_RULES: RuleConfig[] = [];
 
 export const Settings: React.FC = () => {
-  const [apiUrl, setApiUrl] = useState('http://localhost:8000');
-  const [ignorePatterns, setIgnorePatterns] = useState('node_modules/\n.git/\ndist/\n*.lock');
+  const [apiUrl, setApiUrl] = useState('');
+  const [ignorePatterns, setIgnorePatterns] = useState('');
   const [rules, setRules] = useState<RuleConfig[]>(INITIAL_RULES);
   const [saved, setSaved] = useState(false);
 
@@ -71,6 +64,7 @@ export const Settings: React.FC = () => {
             type="text"
             value={apiUrl}
             onChange={e => setApiUrl(e.target.value)}
+            placeholder="e.g. http://localhost:8000"
             className="w-full rounded-lg px-4 py-3 text-sm font-mono transition-all
               bg-slate-50 dark:bg-slate-950
               border border-slate-200 dark:border-slate-700
@@ -131,11 +125,13 @@ export const Settings: React.FC = () => {
           <textarea
             value={ignorePatterns}
             onChange={e => setIgnorePatterns(e.target.value)}
+            placeholder="node_modules/\n.git/\ndist/\n*.lock"
             rows={5}
             className="w-full rounded-lg px-4 py-3 text-sm font-mono resize-none leading-relaxed transition-all
               bg-slate-50 dark:bg-slate-950
               border border-slate-200 dark:border-slate-700
               text-slate-700 dark:text-slate-300
+              placeholder:text-slate-400
               focus:outline-none focus:ring-2 focus:ring-red-500/25 focus:border-red-400 dark:focus:border-red-500"
           />
         </div>
