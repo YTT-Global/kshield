@@ -1,0 +1,229 @@
+# KShield — System Architecture
+
+## Overview
+
+KShield is a **local-first** security analysis system. All code scanning, ML inference, and remediation generation happen on the developer's machine. No source code is transmitted to external servers.
+
+Three entry points:
+- **`kshield init`** — one-time setup per repo: installs hook, downloads backend, starts it
+- **Rust CLI** — `hook` subcommand runs on every `git commit`, blocks CRITICAL/HIGH findings
+- **React Dashboard** — real-time telemetry UI, optionally wrapped in a Tauri native window
+
+---
+
+## Full System Diagram
+
+```
+╔═══════════════════════════════════════════════════════════════════════════╗
+║                          DEVELOPER MACHINE                                ║
+╠═══════════════════════════════════════════════════════════════════════════╣
+║                                                                           ║
+║  Developer runs:  kshield init   (once per repo)                      ║
+║       │                                                                   ║
+║       ▼                                                                   ║
+║  ┌─────────────────────────────────────────────────────────────────────┐ ║
+║  │                    Rust CLI  (kshield binary)                    │ ║
+║  │                                                                       │ ║
+║  │  Commands                      Lifecycle                             │ ║
+║  │  · init   → setup + hook        · setup.rs downloads backend        │ ║
+║  │  · hook   → pre-commit scan     · setup.rs creates venv             │ ║
+║  │  · scan   → manual file scan    · setup.rs installs pip deps        │ ║
+║  │  · start  → spawn backend       · setup.rs spawns uvicorn           │ ║
+║  │  · stop   → kill backend        · PID tracked in backend.pid        │ ║
+║  │  · status → health check        · Logs in backend.log               │ ║
+║  └─────────────────────────────────────────────────────────────────────┘ ║
+║       │  manages                           │  colour TUI output           ║
+║       ▼                                    ▼  (ANSI via ui.rs)            ║
+║  ┌─────────────────────────────────┐  ┌────────────────────────────────┐ ║
+║  │   ~/.kshield/               │  │  Terminal                      │ ║
+║  │   ├── backend/   (Python src)   │  │  COMMIT BLOCKED · 2 issues     │ ║
+║  │   ├── venv/      (Python env)   │  │  CRITICAL  server.py:12        │ ║
+║  │   ├── kshield.db  (SQLite)     │  │  ↳ Move to env var             │ ║
+║  │   ├── backend.pid               │  └────────────────────────────────┘ ║
+║  │   └── backend.log               │                                      ║
+║  └─────────────────────────────────┘                                      ║
+║                   │                                                        ║
+║       also writes │ .git/hooks/pre-commit (calls kshield hook)        ║
+║                   │                                                        ║
+║  ┌─────────────────────────────────────────────────────────────────────┐ ║
+║  │  Tauri Desktop App  (optional)                                       │ ║
+║  │  · Native OS window wrapping the React dashboard                     │ ║
+║  └─────────────────────────────────────────────────────────────────────┘ ║
+║                   │                                                        ║
+║           Renders │                                                        ║
+║                   ▼                                                        ║
+║  ┌─────────────────────────────────────────────────────────────────────┐ ║
+║  │  React 19 Dashboard  (port 5173 dev / port 3000 prod)               │ ║
+║  │  · Security telemetry · Slide-over anomaly detail                    │ ║
+║  │  · Rule toggles       · Light / dark theme                           │ ║
+║  └─────────────────────────────────────────────────────────────────────┘ ║
+║                                                                           ║
+╚═════════════════════════════╪═════════════════════════════════════════════╝
+                              │  HTTP (127.0.0.1:8000)
+                              ▼
+╔═══════════════════════════════════════════════════════════════════════════╗
+║                       FASTAPI BACKEND  (port 8000)                        ║
+╠═══════════════════════════════════════════════════════════════════════════╣
+║                                                                           ║
+║  POST /api/v1/scan                                                        ║
+║       │                                                                   ║
+║       ▼                                                                   ║
+║  ┌──────────────────────┐    ┌─────────────────────────────────────────┐ ║
+║  │  Regex / Entropy      │    │  Python AST Engine                      │ ║
+║  │  Scanner              │    │  (structural access control checks)     │ ║
+║  └──────────────────────┘    └─────────────────────────────────────────┘ ║
+║            │                               │                              ║
+║            └───────────────┬───────────────┘                             ║
+║                            ▼                                              ║
+║  ┌─────────────────────────────────────────────────────────────────────┐ ║
+║  │  Offline ML Classifier  (NumPy — AI hallucination pattern matching)  │ ║
+║  └─────────────────────────────────────────────────────────────────────┘ ║
+║                            │                                              ║
+║                            ▼                                              ║
+║  ┌─────────────────────────────────────────────────────────────────────┐ ║
+║  │  Hallucination Guard  (async PyPI / npm / Go proxy / RubyGems)       │ ║
+║  └─────────────────────────────────────────────────────────────────────┘ ║
+║                            │                                              ║
+║                            ▼                                              ║
+║  ┌─────────────────────────────────────────────────────────────────────┐ ║
+║  │  Remediation Engine  (unified diff patches + ELI5 explanations)      │ ║
+║  └─────────────────────────────────────────────────────────────────────┘ ║
+║                            │  Async SQLAlchemy                            ║
+║                            ▼                                              ║
+║  ┌──────────────────────────────────┐  ┌──────────────────────────────┐  ║
+║  │  SQLite  (local installs)        │  │  PostgreSQL 16 + pgvector    │  ║
+║  │  ~/.kshield/kshield.db      │  │  (Docker Compose / prod)     │  ║
+║  └──────────────────────────────────┘  └──────────────────────────────┘  ║
+║                                                                           ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+                              ▲
+                              │  GitHub REST API — PR inline annotations
+╔═══════════════════════════════════════════════════════════════════════════╗
+║                    GITHUB ACTIONS CLOUD PIPELINE                          ║
+║  CI  : push/PR → build CLI + backend + frontend, run import checks        ║
+║  CD  : tag push (v*) → build 4-platform binaries → publish GitHub Release ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+```
+
+---
+
+## Install Flow
+
+```
+Developer
+    │
+    ├─ curl -fsSL .../install.sh | bash
+    │       │
+    │       └─ detects platform (macOS arm64 / x86, Linux arm64 / x86)
+    │          downloads kshield-{platform}.tar.gz from GitHub Releases
+    │          installs binary to /usr/local/bin/
+    │
+    └─ kshield init   (inside a git repo)
+            │
+            ├─ writes .git/hooks/pre-commit
+            ├─ runs setup.rs:
+            │     find_backend_dir() → ~/.kshield/backend/
+            │     download_backend() → backend.tar.gz from GitHub Releases
+            │     create_venv()      → ~/.kshield/venv/
+            │     install_requirements() → pip install -r requirements.txt
+            └─ start_backend_process() → uvicorn in background
+```
+
+---
+
+## Data Flow (Pre-Commit Scan)
+
+```
+1. Developer runs  git commit
+2. .git/hooks/pre-commit  executes  kshield hook
+3. scanner.rs reads staged files via  git diff --cached --name-only
+4. scanner.rs reads file content from git index via  git show :<filename>
+5. http.rs sends  POST /api/v1/scan  for each file
+6. Backend pipeline runs in sequence:
+   a. Regex/entropy scanner     → hardcoded secrets, high-entropy strings
+   b. AST engine                → broken access control, syntax violations
+   c. ML classifier             → AI hallucination placeholder patterns
+   d. Hallucination guard       → PyPI / npm / Go proxy / RubyGems verification
+   e. Remediation engine        → diff patches + ELI5 explanations
+7. Results stored in SQLite / PostgreSQL (with pgvector embeddings)
+8. http.rs receives ScanResult JSON
+9. ui.rs renders colour output to terminal
+10. If CRITICAL or HIGH found → exit code 1 → commit blocked
+11. If clean → exit code 0 → commit proceeds
+```
+
+---
+
+## Release Flow
+
+```
+Developer pushes  git tag v1.0.0
+    │
+    └─ GitHub Actions: release.yml
+            │
+            ├─ build matrix:
+            │     aarch64-apple-darwin   (macos-14 runner)
+            │     x86_64-apple-darwin    (macos-13 runner)
+            │     x86_64-unknown-linux-gnu  (ubuntu-22.04 runner)
+            │     aarch64-unknown-linux-gnu (ubuntu-22.04 + cross)
+            │
+            ├─ package-backend job:
+            │     tar -czf backend.tar.gz  backend/app  backend/requirements.txt
+            │
+            └─ publish job:
+                  merges checksums
+                  patches homebrew/kshield.rb with real SHA256s
+                  creates GitHub Release with all .tar.gz + checksums.txt
+```
+
+---
+
+## Component–File Map
+
+| Layer | Directory | Key Files |
+|---|---|---|
+| Rust CLI entry | `cli/src/` | `main.rs` — subcommands, init, hook, scan |
+| Backend lifecycle | `cli/src/` | `setup.rs` — download, venv, install, start, stop, pid |
+| Backend API client | `cli/src/` | `http.rs` — health check, scan_file, try_start_backend |
+| Git integration | `cli/src/` | `scanner.rs` — staged files, HEAD SHA |
+| Terminal output | `cli/src/` | `ui.rs` — ANSI colour output for all commands |
+| Shared types | `cli/src/` | `types.rs` — ScanResult, Anomaly, ScanPayload |
+| FastAPI router | `backend/app/api/v1/` | `scan.py` |
+| Analysis engine | `backend/app/engine/` | `entropy.py` · `ast_rules.py` · `model.py` · `sandbox.py` · `remediation.py` |
+| ORM models | `backend/app/models/` | `scans.py` · `vulnerabilities.py` · `false_positives.py` · `configurations.py` |
+| DB session | `backend/app/db/` | `session.py` — SQLite fallback, async session, pool config |
+| SQL migrations | `backend/migrations/` | `init.sql` — used for PostgreSQL; SQLite auto-creates via ORM |
+| React app | `frontend/src/` | `App.tsx` · `main.tsx` · `index.css` |
+| React components | `frontend/src/components/` | `Dashboard.tsx` · `Settings.tsx` · `Sidebar.tsx` |
+| TypeScript types | `frontend/src/types/` | `scan.ts` |
+| npm wrapper | `npm/` | `package.json` · `bin/kshield.js` · `scripts/install.js` |
+| pip package | `/` | `pyproject.toml` · `backend/kshield_backend/cli.py` |
+| curl installer | `/` | `install.sh` |
+| Homebrew formula | `homebrew/` | `kshield.rb` |
+| Tauri wrapper | `src-tauri/` | `src/main.rs` · `tauri.conf.json` |
+| CI pipeline | `.github/workflows/` | `kshield-ci.yml` · `release.yml` |
+| Docs | `docs/` | `architecture.md` · `setup.md` |
+
+---
+
+## Port Reference
+
+| Service | Port | Mode |
+|---|---|---|
+| FastAPI backend | 8000 | All modes |
+| React dev server | 5173 | Development |
+| Nginx (prod frontend) | 3000 | Docker Compose |
+| PostgreSQL | 5432 | Docker Compose / production |
+| SQLite | — | Local / managed install |
+
+---
+
+## Security Boundaries
+
+- All source code stays on the developer's machine
+- FastAPI binds to `127.0.0.1` only — not reachable from other machines
+- SQLite database stored in `~/.kshield/` — local to the user
+- PostgreSQL binds to the Docker internal network only
+- GitHub Actions PR scanner receives only the **changed line diff**, not full file content
+- No API keys or credentials required for local operation
+- CORS restricted to explicit origin list (not `*`)

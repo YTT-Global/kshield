@@ -1,0 +1,49 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "kshield"
+version = "1.0.0"
+description = "Local-first AI code review firewall — catches secrets, broken access control, and AI hallucinations before they reach your main branch."
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.11"
+keywords = ["security", "code-review", "pre-commit", "git-hooks", "secrets-detection"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Security",
+    "Topic :: Software Development :: Quality Assurance",
+]
+dependencies = [
+    "fastapi>=0.111",
+    "uvicorn[standard]>=0.29",
+    "httpx>=0.27",
+    "sqlalchemy[asyncio]>=2.0",
+    "greenlet>=3.0",
+    "asyncpg>=0.29",
+    "aiosqlite>=0.20",
+    "pydantic>=2.7",
+    "pgvector>=0.3",
+    "numpy>=1.26",
+    "python-multipart>=0.0.9",
+]
+
+[project.urls]
+Homepage = "https://github.com/YTTGlobalServices/kshield"
+Documentation = "https://github.com/YTTGlobalServices/kshield/blob/main/docs/setup.md"
+Issues = "https://github.com/YTTGlobalServices/kshield/issues"
+
+[project.scripts]
+kshield-backend = "kshield_backend.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["backend"]
+include = ["app*"]
+
+[tool.setuptools.package-dir]
+"kshield_backend" = "backend/kshield_backend"

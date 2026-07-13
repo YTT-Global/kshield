@@ -1,0 +1,171 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  # ── Build binaries for all platforms ────────────────────────────────────────
+  build:
+    name: Build · ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: aarch64-apple-darwin
+            os: macos-14
+          - target: x86_64-apple-darwin
+            os: macos-13
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-22.04
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-22.04
+            use_cross: true
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Install cross (Linux ARM64 only)
+        if: matrix.use_cross
+        run: cargo install cross --git https://github.com/cross-rs/cross
+
+      - name: Build (native)
+        if: "!matrix.use_cross"
+        run: cargo build --release --target ${{ matrix.target }}
+        working-directory: cli
+
+      - name: Build (cross)
+        if: matrix.use_cross
+        run: cross build --release --target ${{ matrix.target }}
+        working-directory: cli
+
+      - name: Package binary
+        shell: bash
+        run: |
+          BINARY="cli/target/${{ matrix.target }}/release/kshield"
+          TARBALL="kshield-${{ matrix.target }}.tar.gz"
+          cp "$BINARY" kshield
+          tar -czf "$TARBALL" kshield
+          rm kshield
+          sha256sum "$TARBALL" >> checksums.txt 2>/dev/null \
+            || shasum -a 256 "$TARBALL" >> checksums.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: binary-${{ matrix.target }}
+          path: |
+            kshield-${{ matrix.target }}.tar.gz
+            checksums.txt
+
+  # ── Package the Python backend ───────────────────────────────────────────────
+  package-backend:
+    name: Package Python backend
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create backend.tar.gz
+        run: |
+          tar -czf backend.tar.gz \
+            backend/app \
+            backend/requirements.txt \
+            backend/migrations \
+            backend/Dockerfile
+          sha256sum backend.tar.gz >> checksums.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: backend-package
+          path: |
+            backend.tar.gz
+            checksums.txt
+
+  # ── Publish GitHub Release ───────────────────────────────────────────────────
+  publish:
+    name: Publish GitHub Release
+    needs: [build, package-backend]
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Merge checksums
+        run: |
+          cat dist/checksums.txt | sort -u > checksums.txt
+          cat checksums.txt
+
+      - name: Update Homebrew formula checksums
+        run: |
+          ARM64_SHA=$(grep "aarch64-apple-darwin" checksums.txt | awk '{print $1}')
+          X86_SHA=$(grep "x86_64-apple-darwin" checksums.txt | awk '{print $1}')
+          LINUX_X86_SHA=$(grep "x86_64-unknown-linux-gnu" checksums.txt | awk '{print $1}')
+          LINUX_ARM_SHA=$(grep "aarch64-unknown-linux-gnu" checksums.txt | awk '{print $1}')
+          VERSION="${{ github.ref_name }}"
+
+          sed -i "s/version \".*\"/version \"${VERSION#v}\"/" homebrew/kshield.rb
+          sed -i "s/REPLACE_AFTER_LINUX_ARM64_BUILD/$LINUX_ARM_SHA/" homebrew/kshield.rb
+          sed -i "s/REPLACE_AFTER_LINUX_X86_BUILD/$LINUX_X86_SHA/"   homebrew/kshield.rb
+          [ -n "$ARM64_SHA" ] && sed -i "s/018ecd73ac71641382571f05cc10788dcf4f0319c1f132905ae3b00edef8935a/$ARM64_SHA/" homebrew/kshield.rb
+          [ -n "$X86_SHA"   ] && sed -i "s/81fcbd439887f6e2acbb2b6d9287f2d50eb5571ec386246f87c2755bbf1393cb/$X86_SHA/"  homebrew/kshield.rb
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: KShield ${{ github.ref_name }}
+          body: |
+            ## Install
+
+            **macOS / Linux — one command:**
+            ```bash
+            curl -fsSL https://raw.githubusercontent.com/${{ github.repository }}/main/install.sh | bash
+            ```
+
+            **Homebrew (macOS):**
+            ```bash
+            brew install ytt-global/tap/kshield
+            ```
+
+            **npm:**
+            ```bash
+            npx kshield@${{ github.ref_name }} init
+            ```
+
+            **pip:**
+            ```bash
+            pip install kshield && kshield-backend &
+            ```
+
+            ---
+
+            Then inside any git repo:
+            ```bash
+            kshield init
+            ```
+
+            Hook installed. Backend starts automatically. Make a commit to run your first scan.
+
+            ---
+
+            See [CHANGELOG](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for what's new.
+          files: |
+            dist/*.tar.gz
+            checksums.txt
+            homebrew/kshield.rb
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-') }}
