@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Shield, CheckCircle2, AlertTriangle, Layers,
+  Activity, ShieldCheck, ShieldAlert, BarChart3,
   ChevronRight, X, FileCheck2, ScanEye,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -53,9 +53,9 @@ export const Dashboard: React.FC = () => {
   }, []);
 
   const metrics: { label: string; value: number; color: string; Icon: LucideIcon }[] = [
-    { label: 'Total Scans',      value: telemetry.totalScans,         color: 'text-slate-900 dark:text-white',         Icon: Shield        },
-    { label: 'Clean Files',      value: telemetry.cleanFiles,          color: 'text-emerald-600 dark:text-emerald-400', Icon: CheckCircle2  },
-    { label: 'Vulnerabilities',  value: telemetry.openVulnerabilities, color: 'text-red-600 dark:text-red-500',         Icon: AlertTriangle },
+    { label: 'Total Scans',      value: telemetry.totalScans,         color: 'text-slate-900 dark:text-white',         Icon: Activity       },
+    { label: 'Clean Files',      value: telemetry.cleanFiles,          color: 'text-emerald-600 dark:text-emerald-400', Icon: ShieldCheck   },
+    { label: 'Vulnerabilities',  value: telemetry.openVulnerabilities, color: 'text-red-600 dark:text-red-500',         Icon: ShieldAlert   },
   ];
 
   const riskEntry: { key: keyof typeof telemetry.breakdown; cls: string }[] = [
@@ -104,7 +104,7 @@ export const Dashboard: React.FC = () => {
           <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 lg:p-5 shadow-sm dark:shadow-none">
             <div className="flex items-center justify-between mb-2 lg:mb-3">
               <span className="text-[10px] lg:text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">Risk Index</span>
-              <Layers size={16} className="text-slate-600 dark:text-slate-400 flex-shrink-0" />
+              <BarChart3 size={16} className="text-slate-600 dark:text-slate-400 flex-shrink-0" />
             </div>
             <div className="flex gap-1 flex-wrap">
               {riskEntry.map(({ key, cls }) => (
