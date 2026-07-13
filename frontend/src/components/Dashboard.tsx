@@ -94,7 +94,7 @@ export const Dashboard: React.FC = () => {
             <div key={label} className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 lg:p-5 shadow-sm dark:shadow-none">
               <div className="flex items-center justify-between mb-2 lg:mb-3">
                 <span className="text-[10px] lg:text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500 leading-tight">{label}</span>
-                <Icon size={16} className={`${color} opacity-40 flex-shrink-0`} />
+                <Icon size={16} className={`${color} flex-shrink-0`} />
               </div>
               <p className={`text-2xl lg:text-3xl font-bold font-mono ${color}`}>{value}</p>
             </div>
@@ -104,7 +104,7 @@ export const Dashboard: React.FC = () => {
           <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 lg:p-5 shadow-sm dark:shadow-none">
             <div className="flex items-center justify-between mb-2 lg:mb-3">
               <span className="text-[10px] lg:text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">Risk Index</span>
-              <Layers size={16} className="text-slate-900 dark:text-white opacity-30 flex-shrink-0" />
+              <Layers size={16} className="text-slate-600 dark:text-slate-400 flex-shrink-0" />
             </div>
             <div className="flex gap-1 flex-wrap">
               {riskEntry.map(({ key, cls }) => (
