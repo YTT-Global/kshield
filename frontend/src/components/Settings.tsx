@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import { ShieldCog } from 'lucide-react';
+import { ShieldCog, Plus, Server, ListChecks, Ban } from 'lucide-react';
 
 interface RuleConfig {
+// ... (interface and SEVERITY remain unchanged)
+
   id: string;
   label: string;
   description: string;
@@ -24,8 +26,30 @@ export const Settings: React.FC = () => {
   const [rules, setRules] = useState<RuleConfig[]>(INITIAL_RULES);
   const [saved, setSaved] = useState(false);
 
+  // New rule form state
+  const [newRuleLabel, setNewRuleLabel] = useState('');
+  const [newRuleDescription, setNewRuleDescription] = useState('');
+  const [newRuleSeverity, setNewRuleSeverity] = useState<'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW'>('MEDIUM');
+
   const toggleRule = (id: string) =>
     setRules(prev => prev.map(r => r.id === id ? { ...r, enabled: !r.enabled } : r));
+
+  const handleAddRule = () => {
+    if (!newRuleLabel.trim()) return;
+    
+    const rule: RuleConfig = {
+      id: crypto.randomUUID(),
+      label: newRuleLabel.trim(),
+      description: newRuleDescription.trim() || 'User-defined detection rule.',
+      enabled: true,
+      severity: newRuleSeverity,
+    };
+    
+    setRules(prev => [...prev, rule]);
+    setNewRuleLabel('');
+    setNewRuleDescription('');
+    setNewRuleSeverity('MEDIUM');
+  };
 
   const handleSave = () => {
     setSaved(true);
@@ -52,9 +76,12 @@ export const Settings: React.FC = () => {
 
       {/* Backend connection */}
       <section className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm dark:shadow-none">
-        <div className="px-4 sm:px-5 py-4 border-b border-slate-200 dark:border-slate-800">
-          <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200">Backend Connection</h3>
-          <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Firewall API endpoint used for real-time scan analysis.</p>
+        <div className="px-4 sm:px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center gap-3">
+          <Server size={18} className="text-slate-500 dark:text-slate-400 flex-shrink-0" />
+          <div className="min-w-0">
+            <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200">Backend Connection</h3>
+            <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Firewall API endpoint used for real-time scan analysis.</p>
+          </div>
         </div>
         <div className="p-4 sm:p-5">
           <label className="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500 block mb-2">
@@ -78,14 +105,66 @@ export const Settings: React.FC = () => {
       {/* Detection rules */}
       <section className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm dark:shadow-none">
         <div className="px-4 sm:px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200">Detection Rules</h3>
-            <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5 hidden sm:block">Toggle which vulnerability types the engine flags on each scan.</p>
+          <div className="flex items-center gap-3 min-w-0">
+            <ListChecks size={18} className="text-slate-500 dark:text-slate-400 flex-shrink-0" />
+            <div className="min-w-0">
+              <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200">Detection Rules</h3>
+              <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5 hidden sm:block">Toggle which vulnerability types the engine flags on each scan.</p>
+            </div>
           </div>
           <span className="text-[11px] font-mono bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-2.5 py-1 rounded-full border border-slate-200 dark:border-slate-700 flex-shrink-0">
             {activeCount}/{rules.length} active
           </span>
         </div>
+
+        {/* Add New Rule Form */}
+        <div className="p-4 sm:p-5 bg-slate-50/50 dark:bg-slate-800/30 border-b border-slate-100 dark:border-slate-800">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 block ml-1">Rule Label</label>
+              <input
+                type="text"
+                value={newRuleLabel}
+                onChange={e => setNewRuleLabel(e.target.value)}
+                placeholder="e.g. Custom Secret"
+                className="w-full rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-red-500/20"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 block ml-1">Description</label>
+              <input
+                type="text"
+                value={newRuleDescription}
+                onChange={e => setNewRuleDescription(e.target.value)}
+                placeholder="What this rule detects..."
+                className="w-full rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-red-500/20"
+              />
+            </div>
+            <div className="flex gap-2 items-end">
+              <div className="flex-1 space-y-1.5">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 block ml-1">Severity</label>
+                <select
+                  value={newRuleSeverity}
+                  onChange={e => setNewRuleSeverity(e.target.value as any)}
+                  className="w-full rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-red-500/20"
+                >
+                  <option value="CRITICAL">CRITICAL</option>
+                  <option value="HIGH">HIGH</option>
+                  <option value="MEDIUM">MEDIUM</option>
+                  <option value="LOW">LOW</option>
+                </select>
+              </div>
+              <button
+                onClick={handleAddRule}
+                disabled={!newRuleLabel.trim()}
+                className="h-[38px] px-4 rounded-lg bg-red-600 hover:bg-red-700 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Plus size={18} />
+              </button>
+            </div>
+          </div>
+        </div>
+
         <div className="divide-y divide-slate-100 dark:divide-slate-800">
           {rules.map(rule => (
             <div key={rule.id} className="flex items-center gap-3 sm:gap-4 px-4 sm:px-5 py-4 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
@@ -117,9 +196,12 @@ export const Settings: React.FC = () => {
 
       {/* Ignore patterns */}
       <section className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm dark:shadow-none">
-        <div className="px-4 sm:px-5 py-4 border-b border-slate-200 dark:border-slate-800">
-          <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200">Ignore Patterns</h3>
-          <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">One glob pattern per line — matching paths are excluded from all scans.</p>
+        <div className="px-4 sm:px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center gap-3">
+          <Ban size={18} className="text-slate-500 dark:text-slate-400 flex-shrink-0" />
+          <div className="min-w-0">
+            <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200">Ignore Patterns</h3>
+            <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">One glob pattern per line — matching paths are excluded from all scans.</p>
+          </div>
         </div>
         <div className="p-4 sm:p-5">
           <textarea
