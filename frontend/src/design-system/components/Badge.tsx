@@ -1,5 +1,3 @@
-import React from 'react';
-
 type Severity = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
 type Method   = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
 type Status   = 'safe' | 'danger' | 'warning' | 'neutral';

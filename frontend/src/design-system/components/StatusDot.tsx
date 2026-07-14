@@ -1,5 +1,3 @@
-import React from 'react';
-
 type DotStatus = 'active' | 'idle' | 'error' | 'warning';
 
 const DOT_CLS: Record<DotStatus, string> = {
