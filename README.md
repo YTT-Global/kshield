@@ -182,7 +182,9 @@ Python files with parse errors are flagged — truncated AI-generated code often
 | **Auto-remediation** | Unified diff patches and ELI5 explanations for every finding |
 | **Severity triage** | CRITICAL / HIGH / MEDIUM / LOW with per-rule toggles |
 | **Semantic search** | pgvector embeddings for similarity search across scan history |
-| **Dashboard** | React UI with light/dark theme, live telemetry, slide-over detail |
+| **Dashboard** | React UI with Exo 2 typography, light/dark theme, custom icons, slide-over detail |
+| **Design system** | Reusable component library — Badge, Button, Card, CodeBlock, Drawer, and more |
+| **In-app docs** | Built-in How to Use page with User Guide + API Reference tabs |
 | **Desktop app** | Tauri wrapper packages the dashboard as a native OS window |
 | **4 install paths** | `curl`, `npx`, `pip`, `brew` — all pointing to the same binary |
 
@@ -195,7 +197,8 @@ Python files with parse errors are flagged — truncated AI-generated code often
 | CLI | Rust · Clap · Reqwest · Tokio |
 | Backend | FastAPI · SQLAlchemy (async) · NumPy · pgvector |
 | Database | PostgreSQL 16 + pgvector (or SQLite for local installs) |
-| Frontend | React 19 · Vite 8 · Tailwind CSS v4 · Lucide React |
+| Frontend | React 19 · Vite 8 · Tailwind CSS v4 · Exo 2 · JetBrains Mono |
+| Design System | Custom component library — tokens, 11 components, SVG icon set |
 | Desktop | Tauri 2 |
 | CI/CD | GitHub Actions (multi-platform release + PR scanning) |
 | Infra | Docker Compose (optional, for production) |
@@ -221,9 +224,16 @@ kshield/
 │       ├── models/             # SQLAlchemy ORM models
 │       └── db/session.py       # Async session + SQLite fallback
 ├── frontend/                   # React dashboard
-│   └── src/components/         # Dashboard · Settings · Sidebar
+│   └── src/
+│       ├── components/         # Dashboard · Settings · Sidebar · Docs
+│       └── design-system/      # Component library
+│           ├── tokens.ts       # Colors, radius, shadow, font tokens
+│           ├── index.ts        # Barrel export
+│           └── components/     # Badge · Button · Card · CodeBlock · Table
+│                               # Alert · StatusDot · PageHeader · Drawer
+│                               # EmptyState · Icons (SVG)
 ├── npm/                        # npx kshield wrapper package
-├── homebrew/kshield.rb     # Homebrew formula
+├── homebrew/kshield.rb         # Homebrew formula
 ├── install.sh                  # curl | bash installer
 ├── pyproject.toml              # pip install kshield
 ├── CHANGELOG.md
@@ -278,13 +288,26 @@ Developer Laptop
 
 ---
 
+## API Reference
+
+The backend exposes a REST API at `http://localhost:8000`. Full reference is available in the dashboard under **How to Use → API Reference**.
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/health` | Backend liveness check |
+| `POST` | `/api/v1/scan` | Submit a file for security analysis |
+
+---
+
 ## Roadmap
 
 - [x] Rust CLI — init, setup, start, stop, status, hook, scan
 - [x] Zero-friction install (curl, npx, pip, brew)
 - [x] SQLite mode — no Docker for first run
 - [x] Auto backend lifecycle management (~/.kshield/)
-- [x] React dashboard — enterprise custom SVG logo, stacked brand layout, light/dark, responsive, slide-over detail
+- [x] React dashboard — Exo 2 typography, light/dark, responsive, slide-over detail
+- [x] Design system — tokens, 11 components, custom SVG icon set
+- [x] In-app documentation — User Guide + API Reference with tab switcher
 - [x] GitHub Actions — multi-platform release + PR scan
 - [x] Homebrew formula
 - [x] Trust Through Accuracy — 30+ secret patterns, async AST, Go/Ruby registries, test file exemption

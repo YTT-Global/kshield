@@ -5,6 +5,10 @@
   html {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    font-family: "Exo 2", ui-sans-serif, system-ui, sans-serif;
+  }
+  code, pre, kbd, samp, .font-mono {
+    font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
   }
 }
 

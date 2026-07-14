@@ -3,6 +3,7 @@ import {
   Activity, ShieldCheck, ShieldAlert, BarChart3,
   ChevronRight, X, FileCheck2, ScanEye,
 } from 'lucide-react';
+import { WorkspacesIcon, StructuralHazardsIcon, EngineActiveIcon } from '../design-system';
 import type { LucideIcon } from 'lucide-react';
 import type { ScanResult, GlobalTelemetry, Anomaly } from '../types/scan';
 
@@ -83,7 +84,7 @@ export const Dashboard: React.FC = () => {
           <div className="flex items-center gap-2 text-xs font-mono px-3 py-1.5 rounded-full self-start sm:self-auto
             bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800
             text-slate-500 dark:text-slate-400 shadow-sm dark:shadow-none whitespace-nowrap">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <EngineActiveIcon size={14} className="text-emerald-500" />
             Engine active
           </div>
         </div>
@@ -122,7 +123,10 @@ export const Dashboard: React.FC = () => {
           {/* Scan list */}
           <div className="xl:col-span-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden flex flex-col h-[300px] sm:h-[380px] xl:h-[560px] shadow-sm dark:shadow-none">
             <div className="px-4 py-3.5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between flex-shrink-0">
-              <span className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Workspaces</span>
+              <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                <WorkspacesIcon size={14} className="text-slate-400 dark:text-slate-500" />
+                Workspaces
+              </span>
               <span className="text-[11px] font-mono bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-2 py-0.5 rounded-full">{scans.length}</span>
             </div>
             <div className="overflow-y-auto flex-1 divide-y divide-slate-100 dark:divide-slate-800">
@@ -167,7 +171,10 @@ export const Dashboard: React.FC = () => {
           {/* Anomaly list */}
           <div className="xl:col-span-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden flex flex-col h-[360px] sm:h-[420px] xl:h-[560px] shadow-sm dark:shadow-none">
             <div className="px-4 py-3.5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between flex-shrink-0">
-              <span className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Structural Hazards</span>
+              <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                <StructuralHazardsIcon size={14} className="text-slate-400 dark:text-slate-500" />
+                Structural Hazards
+              </span>
               {selectedScan && (
                 <span className="text-xs font-mono text-slate-400 dark:text-slate-600 truncate max-w-[150px] sm:max-w-[240px]">{selectedScan.filename}</span>
               )}
