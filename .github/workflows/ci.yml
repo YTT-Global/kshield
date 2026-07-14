@@ -104,16 +104,22 @@ jobs:
       - name: Scan changed files
         id: scan
         run: |
-          FINDINGS="[]"
+          # Accumulate flat list of {file, anomaly} objects
+          ALL="[]"
           while IFS= read -r file; do
             [ -f "$file" ] || continue
-            CONTENT=$(cat "$file" | jq -Rs .)
+            CONTENT=$(jq -Rs . < "$file")
             RESULT=$(curl -sf -X POST http://127.0.0.1:8000/api/v1/scan \
               -H "Content-Type: application/json" \
-              -d "{\"filename\": \"$file\", \"content\": $CONTENT}" || echo '{"anomalies":[]}')
-            FINDINGS=$(echo "$FINDINGS $RESULT" | jq -s 'add')
+              -d "{\"filename\": \"$file\", \"content\": $CONTENT}" \
+              || echo '{"anomalies":[]}')
+            # Extract anomalies and tag each with its filename
+            FILE_FINDINGS=$(echo "$RESULT" | jq -c \
+              --arg f "$file" \
+              '[.anomalies // [] | .[] | {file: $f, anomaly: .}]')
+            ALL=$(echo "$ALL $FILE_FINDINGS" | jq -s 'add // []')
           done < /tmp/changed_files.txt
-          echo "findings=$(echo $FINDINGS | jq -c .)" >> $GITHUB_OUTPUT
+          echo "findings=$(echo "$ALL" | jq -c .)" >> $GITHUB_OUTPUT
       - name: Post review comments
         uses: actions/github-script@v7
         with:
@@ -121,11 +127,13 @@ jobs:
             const raw = `${{ steps.scan.outputs.findings }}`;
             let findings;
             try { findings = JSON.parse(raw); } catch { findings = []; }
-            const comments = (findings.anomalies || []).map(f => ({
-              path: findings.filename || 'unknown',
-              line: f.line || 1,
-              body: `**${f.severity}** — ${f.type}\n\n${f.description}\n\n> ${f.remediation?.explanation || ''}`
-            })).filter(c => c.path !== 'unknown');
+            const comments = findings
+              .map(({ file, anomaly: f }) => ({
+                path: file,
+                line: f.line || 1,
+                body: `**${f.severity}** — ${f.type}\n\n${f.description}\n\n> ${f.remediation?.explanation || ''}`.trim(),
+              }))
+              .filter(c => c.path);
             if (comments.length > 0) {
               await github.rest.pulls.createReview({
                 owner: context.repo.owner,
