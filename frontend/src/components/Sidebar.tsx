@@ -1,19 +1,20 @@
 import React from 'react';
 import type { LucideIcon } from 'lucide-react';
-import { LayoutDashboard, Settings2, Sun, Moon, X } from 'lucide-react';
+import { LayoutDashboard, Settings2, BookOpen, Sun, Moon, X } from 'lucide-react';
 
 interface SidebarProps {
-  currentView: 'dashboard' | 'settings';
-  setView: (view: 'dashboard' | 'settings') => void;
+  currentView: 'dashboard' | 'settings' | 'docs';
+  setView: (view: 'dashboard' | 'settings' | 'docs') => void;
   theme: 'light' | 'dark';
   toggleTheme: () => void;
   isOpen: boolean;
   onClose: () => void;
 }
 
-const navItems: { id: 'dashboard' | 'settings'; label: string; Icon: LucideIcon }[] = [
+const navItems: { id: 'dashboard' | 'settings' | 'docs'; label: string; Icon: LucideIcon }[] = [
   { id: 'dashboard', label: 'Dashboard',        Icon: LayoutDashboard },
   { id: 'settings',  label: 'Rules & Settings', Icon: Settings2        },
+  { id: 'docs',      label: 'How to Use',       Icon: BookOpen         },
 ];
 
 export const Sidebar: React.FC<SidebarProps> = ({
