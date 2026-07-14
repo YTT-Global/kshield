@@ -1,12 +1,11 @@
 import React from 'react';
 import type { LucideIcon } from 'lucide-react';
 import { LayoutDashboard, Settings2, BookOpen, Sun, Moon, X } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
 
 interface SidebarProps {
   currentView: 'dashboard' | 'settings' | 'docs';
   setView: (view: 'dashboard' | 'settings' | 'docs') => void;
-  theme: 'light' | 'dark';
-  toggleTheme: () => void;
   isOpen: boolean;
   onClose: () => void;
 }
@@ -18,8 +17,9 @@ const navItems: { id: 'dashboard' | 'settings' | 'docs'; label: string; Icon: Lu
 ];
 
 export const Sidebar: React.FC<SidebarProps> = ({
-  currentView, setView, theme, toggleTheme, isOpen, onClose,
+  currentView, setView, isOpen, onClose,
 }) => {
+  const { theme, toggle: toggleTheme } = useTheme();
   return (
     <aside className={`
       w-64 bg-white dark:bg-slate-900

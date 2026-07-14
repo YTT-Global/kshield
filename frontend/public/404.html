@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script>
+    // SPA redirect: GitHub Pages serves 404 on deep links, this bounces back to index
+    const base = '/kshield';
+    const path = window.location.pathname.replace(base, '') || '/';
+    const search = window.location.search;
+    sessionStorage.setItem('spa-redirect', path + search);
+    window.location.replace(base + '/');
+  </script>
+</head>
+<body></body>
+</html>
