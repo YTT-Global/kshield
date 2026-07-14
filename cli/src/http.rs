@@ -1,6 +1,7 @@
 use anyhow::Result;
 use reqwest::Client;
 
+use crate::config::SuppressConfig;
 use crate::setup;
 use crate::types::{ScanPayload, ScanResult};
 
@@ -28,12 +29,14 @@ pub async fn scan_file(
     filename: &str,
     content: &str,
     commit_sha: Option<&str>,
+    suppress: SuppressConfig,
 ) -> Result<ScanResult> {
     let url = format!("{}/api/v1/scan", backend_url());
     let payload = ScanPayload {
         filename: filename.to_string(),
         content: content.to_string(),
         commit_sha: commit_sha.map(String::from),
+        suppress,
     };
 
     let response = client

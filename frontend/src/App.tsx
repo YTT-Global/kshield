@@ -1,26 +1,26 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Menu, Shield } from 'lucide-react';
 import { Sidebar } from './components/Sidebar';
 import { Dashboard } from './components/Dashboard';
 import { Settings } from './components/Settings';
 import { Docs } from './components/Docs';
-type Theme = 'light' | 'dark';
 
 export const App: React.FC = () => {
-  const [currentView, setView] = useState<'dashboard' | 'settings' | 'docs'>('dashboard');
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [theme, setTheme] = useState<Theme>(() => {
-    const stored = localStorage.getItem('kshield-theme');
-    return stored === 'light' ? 'light' : 'dark';
+  const location = useLocation();
+  const [currentView, setView] = useState<'dashboard' | 'settings' | 'docs'>(() => {
+    const params = new URLSearchParams(location.search);
+    const tab = params.get('tab');
+    return tab === 'docs' ? 'docs' : tab === 'settings' ? 'settings' : 'dashboard';
   });
-
-  const toggleTheme = () => setTheme(t => t === 'dark' ? 'light' : 'dark');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
-    const root = document.documentElement;
-    theme === 'dark' ? root.classList.add('dark') : root.classList.remove('dark');
-    localStorage.setItem('kshield-theme', theme);
-  }, [theme]);
+    const params = new URLSearchParams(location.search);
+    const tab = params.get('tab');
+    if (tab === 'docs') setView('docs');
+    else if (tab === 'settings') setView('settings');
+  }, [location.search]);
 
   const handleSetView = (view: 'dashboard' | 'settings' | 'docs') => {
     setView(view);
@@ -60,8 +60,6 @@ export const App: React.FC = () => {
       <Sidebar
         currentView={currentView}
         setView={handleSetView}
-        theme={theme}
-        toggleTheme={toggleTheme}
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
       />
