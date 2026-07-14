@@ -1,3 +1,4 @@
+mod config;
 mod http;
 mod scanner;
 mod setup;
@@ -240,12 +241,13 @@ async fn cmd_hook() -> Result<()> {
 
     let sha = scanner::get_head_sha();
     let sha_ref = if sha.is_empty() { None } else { Some(sha.as_str()) };
+    let suppress = config::load();
 
     let mut all_findings: Vec<(String, Vec<types::Anomaly>)> = Vec::new();
     let mut blocked = false;
 
     for file in &staged {
-        match http::scan_file(&client, &file.filename, &file.content, sha_ref).await {
+        match http::scan_file(&client, &file.filename, &file.content, sha_ref, suppress.clone()).await {
             Ok(result) => {
                 ui::print_file_result(&file.filename, &result);
                 let has_critical = result
@@ -285,8 +287,9 @@ async fn cmd_scan(file: std::path::PathBuf) -> Result<()> {
         std::process::exit(1);
     }
 
+    let suppress = config::load();
     ui::print_header(1);
-    let result = http::scan_file(&client, &filename, &content, None).await?;
+    let result = http::scan_file(&client, &filename, &content, None, suppress).await?;
     ui::print_file_result(&filename, &result);
 
     if !result.safe {

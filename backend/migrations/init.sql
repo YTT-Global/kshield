@@ -20,8 +20,9 @@ CREATE TABLE IF NOT EXISTS vulnerabilities (
     severity VARCHAR(50) NOT NULL,
     description TEXT NOT NULL,
     code_snippet TEXT NOT NULL,
-    embedding vector(1536),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+    embedding   vector(1536),
+    suppressed  BOOLEAN DEFAULT FALSE NOT NULL,
+    created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
 -- False positive suppression table
@@ -43,4 +44,5 @@ CREATE TABLE IF NOT EXISTS configurations (
 -- Create optimal index configurations for production lookup loads
 CREATE INDEX IF NOT EXISTS idx_scans_filename ON scans(filename);
 CREATE INDEX IF NOT EXISTS idx_vulnerabilities_anomaly ON vulnerabilities(anomaly_type);
-CREATE INDEX IF NOT EXISTS idx_vulnerabilities_severity ON vulnerabilities(severity);
+CREATE INDEX IF NOT EXISTS idx_vulnerabilities_severity   ON vulnerabilities(severity);
+CREATE INDEX IF NOT EXISTS idx_vulnerabilities_suppressed ON vulnerabilities(suppressed);

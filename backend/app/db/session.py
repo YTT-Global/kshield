@@ -37,12 +37,24 @@ AsyncSessionLocal = async_sessionmaker(
 Base = declarative_base()
 
 
+async def _sqlite_migrate(conn) -> None:
+    """Apply additive schema changes to existing SQLite DBs that predate them."""
+    migrations = [
+        "ALTER TABLE vulnerabilities ADD COLUMN suppressed BOOLEAN NOT NULL DEFAULT FALSE",
+    ]
+    for sql in migrations:
+        try:
+            await conn.execute(__import__("sqlalchemy").text(sql))
+        except Exception:
+            pass  # column already exists — safe to ignore
+
+
 async def init_db() -> None:
     if _SQLITE_FALLBACK:
-        # Auto-create tables from ORM models when using SQLite (no migration file)
         from app.models import scans, vulnerabilities, false_positives, configurations  # noqa: F401
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
+            await _sqlite_migrate(conn)
 
 
 async def close_db() -> None:
