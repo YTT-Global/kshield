@@ -20,7 +20,7 @@ class ScanRequest(BaseModel):
     commit_sha: Optional[str] = Field(None)
 
 @router.post("", response_model=dict)
-async def process_code_pipeline_evaluation(payload: CodeExecutionPayload, db: AsyncSession = Depends(get_db_session)):
+async def process_code_pipeline_evaluation(payload: ScanRequest, db: AsyncSession = Depends(get_db_session)):
     try:
         scan_uid = str(uuid.uuid4())
         
