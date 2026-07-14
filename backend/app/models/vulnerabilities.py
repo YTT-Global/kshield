@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, Text
+from sqlalchemy import Boolean, Column, String, Integer, DateTime, ForeignKey, Text
 from pgvector.sqlalchemy import Vector
 from app.db.session import Base
 
@@ -13,5 +13,6 @@ class Vulnerability(Base):
     severity = Column(String, nullable=False, index=True)  # CRITICAL, HIGH, MEDIUM, LOW
     description = Column(Text, nullable=False)
     code_snippet = Column(Text, nullable=False)
-    embedding = Column(Vector(1536), nullable=True)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+    embedding   = Column(Vector(1536), nullable=True)
+    suppressed  = Column(Boolean, default=False, nullable=False)
+    created_at  = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)

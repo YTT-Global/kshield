@@ -1,18 +1,46 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Activity, ShieldCheck, ShieldAlert, BarChart3,
-  ChevronRight, X, FileCheck2, ScanEye,
+  ChevronRight, X, FileCheck2, ScanEye, CheckCircle2, AlertCircle,
 } from 'lucide-react';
 import { WorkspacesIcon, StructuralHazardsIcon, EngineActiveIcon } from '../design-system';
 import type { LucideIcon } from 'lucide-react';
 import type { ScanResult, GlobalTelemetry, Anomaly } from '../types/scan';
+import { api } from '../api/client';
 
-const SEVERITY: Record<string, string> = {
+// ── Types ────────────────────────────────────────────────────────────────────
+
+type Severity = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+type FilterChip = Severity | 'ALL';
+
+interface Toast {
+  id: number;
+  message: string;
+  kind: 'success' | 'error';
+}
+
+// ── Constants ────────────────────────────────────────────────────────────────
+
+const SEVERITY_CLS: Record<string, string> = {
   CRITICAL: 'bg-red-100 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-400 dark:border-red-900',
   HIGH:     'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-950 dark:text-orange-400 dark:border-orange-900',
   MEDIUM:   'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-400 dark:border-amber-900',
   LOW:      'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-400 dark:border-blue-900',
 };
+
+const CHIP_ACTIVE: Record<FilterChip, string> = {
+  ALL:      'bg-slate-900 text-white dark:bg-white dark:text-slate-900',
+  CRITICAL: 'bg-red-600 text-white',
+  HIGH:     'bg-orange-500 text-white',
+  MEDIUM:   'bg-amber-500 text-white',
+  LOW:      'bg-blue-500 text-white',
+};
+
+const CHIP_IDLE = 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700';
+
+const POLL_MS = 5000;
+
+// ── Sub-components ───────────────────────────────────────────────────────────
 
 function DiffViewer({ diff }: { diff: string }) {
   const lineClass = (line: string): string => {
@@ -22,6 +50,9 @@ function DiffViewer({ diff }: { diff: string }) {
     if (line.startsWith('@@')) return 'text-blue-600 dark:text-blue-400 block px-1';
     return 'text-slate-500 block px-1';
   };
+  if (!diff) return (
+    <p className="text-xs text-slate-400 dark:text-slate-600 italic">No patch available.</p>
+  );
   return (
     <pre className="p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg overflow-x-auto text-[11px] font-mono leading-relaxed">
       {diff.split('\n').map((line, i) => (
@@ -31,21 +62,72 @@ function DiffViewer({ diff }: { diff: string }) {
   );
 }
 
+function ToastStack({ toasts, onDismiss }: { toasts: Toast[]; onDismiss: (id: number) => void }) {
+  return (
+    <div className="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none">
+      {toasts.map(t => (
+        <div
+          key={t.id}
+          className={`pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg border text-sm font-medium
+            transition-all duration-300
+            ${t.kind === 'success'
+              ? 'bg-white dark:bg-slate-900 border-emerald-200 dark:border-emerald-800 text-slate-800 dark:text-slate-100'
+              : 'bg-white dark:bg-slate-900 border-red-200 dark:border-red-800 text-slate-800 dark:text-slate-100'
+            }`}
+        >
+          {t.kind === 'success'
+            ? <CheckCircle2 size={16} className="text-emerald-500 flex-shrink-0" />
+            : <AlertCircle size={16} className="text-red-500 flex-shrink-0" />
+          }
+          <span>{t.message}</span>
+          <button onClick={() => onDismiss(t.id)} className="ml-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+            <X size={13} />
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── Main component ───────────────────────────────────────────────────────────
+
 export const Dashboard: React.FC = () => {
-  const [telemetry] = useState<GlobalTelemetry>({
-    totalScans: 0,
-    cleanFiles: 0,
-    openVulnerabilities: 0,
+  const [telemetry, setTelemetry] = useState<GlobalTelemetry>({
+    totalScans: 0, cleanFiles: 0, openVulnerabilities: 0,
     breakdown: { critical: 0, high: 0, medium: 0, low: 0 },
   });
-
-  const [scans] = useState<ScanResult[]>([]);
-
+  const [scans, setScans]           = useState<ScanResult[]>([]);
   const [selectedScan, setSelectedScan] = useState<ScanResult | null>(null);
-  const [drawerOpen, setDrawerOpen]       = useState(false);
+  const [drawerOpen, setDrawerOpen]     = useState(false);
   const [drawerAnomaly, setDrawerAnomaly] = useState<Anomaly | null>(null);
+  const [filter, setFilter]             = useState<FilterChip>('ALL');
+  const [toasts, setToasts]             = useState<Toast[]>([]);
+  const toastCounter                    = useRef(0);
 
-  const openDrawer = (anomaly: Anomaly) => { setDrawerAnomaly(anomaly); setDrawerOpen(true); };
+  // ── Data fetching ──────────────────────────────────────────────────────────
+
+  const fetchData = useCallback(async () => {
+    try {
+      const [s, t] = await Promise.all([api.scans(), api.telemetry()]);
+      setScans(s);
+      setTelemetry(t);
+      // keep selected scan in sync if it was updated
+      if (selectedScan) {
+        const refreshed = s.find(x => x.scan_id === selectedScan.scan_id);
+        if (refreshed) setSelectedScan(refreshed);
+      }
+    } catch {
+      // backend not running — fail silently, keep showing last state
+    }
+  }, [selectedScan]);
+
+  useEffect(() => {
+    fetchData();
+    const id = setInterval(fetchData, POLL_MS);
+    return () => clearInterval(id);
+  }, [fetchData]);
+
+  // ── Keyboard ───────────────────────────────────────────────────────────────
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setDrawerOpen(false); };
@@ -53,18 +135,76 @@ export const Dashboard: React.FC = () => {
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
+  // ── Toasts ─────────────────────────────────────────────────────────────────
+
+  const addToast = (message: string, kind: Toast['kind']) => {
+    const id = ++toastCounter.current;
+    setToasts(prev => [...prev, { id, message, kind }]);
+    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
+  };
+
+  const dismissToast = (id: number) => setToasts(prev => prev.filter(t => t.id !== id));
+
+  // ── Actions ────────────────────────────────────────────────────────────────
+
+  const handleApplyPatch = async () => {
+    if (!drawerAnomaly) return;
+    if (!drawerAnomaly.remediation.patch_diff) {
+      addToast('No patch available for this finding.', 'error');
+      return;
+    }
+    try {
+      const result = await api.applyPatch(drawerAnomaly.id) as { status: string; message?: string };
+      if (result.status === 'applied') {
+        addToast(`Patch applied to file successfully.`, 'success');
+        setDrawerOpen(false);
+      } else {
+        // Fall back to clipboard
+        await navigator.clipboard.writeText(drawerAnomaly.remediation.patch_diff);
+        addToast(result.message ?? 'Patch copied to clipboard — run `git apply` to apply it.', 'error');
+      }
+    } catch {
+      await navigator.clipboard.writeText(drawerAnomaly.remediation.patch_diff);
+      addToast('Patch copied to clipboard — run `git apply` to apply it.', 'error');
+    }
+  };
+
+  const handleSuppress = async () => {
+    if (!drawerAnomaly) return;
+    try {
+      await api.suppress(drawerAnomaly.type);
+      addToast(`"${drawerAnomaly.type}" suppressed globally — future scans will skip it.`, 'success');
+      setDrawerOpen(false);
+      fetchData();
+    } catch {
+      addToast('Could not save suppression rule.', 'error');
+    }
+  };
+
+  const openDrawer = (anomaly: Anomaly) => { setDrawerAnomaly(anomaly); setDrawerOpen(true); };
+
+  // ── Derived ────────────────────────────────────────────────────────────────
+
+  const visibleAnomalies = selectedScan
+    ? (filter === 'ALL' ? selectedScan.anomalies : selectedScan.anomalies.filter(a => a.severity === filter))
+    : [];
+
   const metrics: { label: string; value: number; color: string; Icon: LucideIcon }[] = [
-    { label: 'Total Scans',      value: telemetry.totalScans,         color: 'text-slate-900 dark:text-white',         Icon: Activity       },
-    { label: 'Clean Files',      value: telemetry.cleanFiles,          color: 'text-emerald-600 dark:text-emerald-400', Icon: ShieldCheck   },
-    { label: 'Vulnerabilities',  value: telemetry.openVulnerabilities, color: 'text-red-600 dark:text-red-500',         Icon: ShieldAlert   },
+    { label: 'Total Scans',     value: telemetry.totalScans,         color: 'text-slate-900 dark:text-white',         Icon: Activity    },
+    { label: 'Clean Files',     value: telemetry.cleanFiles,          color: 'text-emerald-600 dark:text-emerald-400', Icon: ShieldCheck },
+    { label: 'Vulnerabilities', value: telemetry.openVulnerabilities, color: 'text-red-600 dark:text-red-500',         Icon: ShieldAlert },
   ];
 
   const riskEntry: { key: keyof typeof telemetry.breakdown; cls: string }[] = [
-    { key: 'critical', cls: 'bg-red-100 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-400 dark:border-red-900' },
-    { key: 'high',     cls: 'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-950 dark:text-orange-400 dark:border-orange-900' },
-    { key: 'medium',   cls: 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-400 dark:border-amber-900' },
-    { key: 'low',      cls: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-400 dark:border-blue-900' },
+    { key: 'critical', cls: SEVERITY_CLS.CRITICAL },
+    { key: 'high',     cls: SEVERITY_CLS.HIGH     },
+    { key: 'medium',   cls: SEVERITY_CLS.MEDIUM   },
+    { key: 'low',      cls: SEVERITY_CLS.LOW      },
   ];
+
+  const chips: FilterChip[] = ['ALL', 'CRITICAL', 'HIGH', 'MEDIUM', 'LOW'];
+
+  // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
     <>
@@ -134,7 +274,7 @@ export const Dashboard: React.FC = () => {
                 scans.map(scan => (
                   <button
                     key={scan.scan_id}
-                    onClick={() => setSelectedScan(scan)}
+                    onClick={() => { setSelectedScan(scan); setFilter('ALL'); }}
                     className={`w-full px-4 py-3.5 text-left flex items-center justify-between gap-3 transition-colors duration-100 ${
                       selectedScan?.scan_id === scan.scan_id
                         ? 'bg-slate-50 dark:bg-slate-800/60'
@@ -170,19 +310,40 @@ export const Dashboard: React.FC = () => {
 
           {/* Anomaly list */}
           <div className="xl:col-span-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden flex flex-col h-[360px] sm:h-[420px] xl:h-[560px] shadow-sm dark:shadow-none">
-            <div className="px-4 py-3.5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between flex-shrink-0">
-              <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                <StructuralHazardsIcon size={14} className="text-slate-400 dark:text-slate-500" />
-                Structural Hazards
-              </span>
+            <div className="px-4 py-3.5 border-b border-slate-200 dark:border-slate-800 flex-shrink-0 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  <StructuralHazardsIcon size={14} className="text-slate-400 dark:text-slate-500" />
+                  Structural Hazards
+                </span>
+                {selectedScan && (
+                  <span className="text-xs font-mono text-slate-400 dark:text-slate-600 truncate max-w-[150px] sm:max-w-[240px]">{selectedScan.filename}</span>
+                )}
+              </div>
+
+              {/* Filter chips */}
               {selectedScan && (
-                <span className="text-xs font-mono text-slate-400 dark:text-slate-600 truncate max-w-[150px] sm:max-w-[240px]">{selectedScan.filename}</span>
+                <div className="flex gap-1.5 flex-wrap">
+                  {chips.map(chip => (
+                    <button
+                      key={chip}
+                      onClick={() => setFilter(chip)}
+                      className={`text-[10px] font-bold font-mono px-2.5 py-1 rounded-full transition-colors duration-100 ${
+                        filter === chip ? CHIP_ACTIVE[chip] : CHIP_IDLE
+                      }`}
+                    >
+                      {chip === 'ALL'
+                        ? `ALL · ${selectedScan.anomalies.length}`
+                        : `${chip} · ${selectedScan.anomalies.filter(a => a.severity === chip).length}`}
+                    </button>
+                  ))}
+                </div>
               )}
             </div>
 
-            {selectedScan && selectedScan.anomalies.length > 0 ? (
+            {selectedScan && visibleAnomalies.length > 0 ? (
               <div className="overflow-y-auto flex-1 divide-y divide-slate-100 dark:divide-slate-800">
-                {selectedScan.anomalies.map(anomaly => (
+                {visibleAnomalies.map(anomaly => (
                   <button
                     key={anomaly.id}
                     onClick={() => openDrawer(anomaly)}
@@ -191,7 +352,7 @@ export const Dashboard: React.FC = () => {
                     <div className="flex items-center gap-3 sm:gap-4">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 sm:gap-2.5 mb-1.5 flex-wrap">
-                          <span className={`text-[10px] font-bold font-mono px-2 py-0.5 rounded-md border uppercase ${SEVERITY[anomaly.severity]}`}>
+                          <span className={`text-[10px] font-bold font-mono px-2 py-0.5 rounded-md border uppercase ${SEVERITY_CLS[anomaly.severity]}`}>
                             {anomaly.severity}
                           </span>
                           <span className="text-xs text-slate-400 dark:text-slate-500 font-mono">Line {anomaly.line}</span>
@@ -212,9 +373,13 @@ export const Dashboard: React.FC = () => {
                 <div className="w-12 h-12 rounded-full bg-emerald-100 dark:bg-emerald-950 flex items-center justify-center mb-3">
                   <FileCheck2 size={22} className="text-emerald-600 dark:text-emerald-400" />
                 </div>
-                <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-1">No Anomalies Detected</h3>
+                <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-1">
+                  {selectedScan && filter !== 'ALL' ? `No ${filter} findings` : 'No Anomalies Detected'}
+                </h3>
                 <p className="text-xs text-slate-400 dark:text-slate-500 max-w-xs leading-relaxed">
-                  This workspace scan returned clean — no structural hazards or credential leaks intercepted.
+                  {selectedScan && filter !== 'ALL'
+                    ? `This scan has no ${filter} severity findings.`
+                    : 'This workspace scan returned clean — no structural hazards or credential leaks intercepted.'}
                 </p>
               </div>
             )}
@@ -231,7 +396,7 @@ export const Dashboard: React.FC = () => {
         }`}
       />
 
-      {/* Slide-over drawer — full width on mobile, fixed width on sm+ */}
+      {/* Slide-over drawer */}
       <div className={`fixed top-0 right-0 h-full w-full sm:w-[500px] z-40 flex flex-col
         bg-white dark:bg-slate-900
         border-l border-slate-200 dark:border-slate-700
@@ -244,7 +409,7 @@ export const Dashboard: React.FC = () => {
             <div className="flex items-start justify-between px-5 sm:px-6 py-5 border-b border-slate-200 dark:border-slate-800 flex-shrink-0">
               <div className="flex-1 pr-4 min-w-0">
                 <div className="flex items-center gap-2.5 mb-2">
-                  <span className={`text-[10px] font-bold font-mono px-2 py-0.5 rounded-md border uppercase ${SEVERITY[drawerAnomaly.severity]}`}>
+                  <span className={`text-[10px] font-bold font-mono px-2 py-0.5 rounded-md border uppercase ${SEVERITY_CLS[drawerAnomaly.severity]}`}>
                     {drawerAnomaly.severity}
                   </span>
                   <span className="text-xs font-mono text-slate-400 dark:text-slate-500">Line {drawerAnomaly.line}</span>
@@ -280,7 +445,9 @@ export const Dashboard: React.FC = () => {
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-2">Plain English</p>
                 <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-4">
-                  <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">{drawerAnomaly.remediation.explanation}</p>
+                  <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+                    {drawerAnomaly.remediation.explanation || 'No explanation available.'}
+                  </p>
                 </div>
               </div>
 
@@ -291,20 +458,29 @@ export const Dashboard: React.FC = () => {
             </div>
 
             <div className="px-5 sm:px-6 py-4 border-t border-slate-200 dark:border-slate-800 flex gap-3 flex-shrink-0">
-              <button className="flex-1 py-2.5 rounded-lg text-sm font-semibold transition-colors
-                bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700
-                text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+              <button
+                onClick={handleSuppress}
+                className="flex-1 py-2.5 rounded-lg text-sm font-semibold transition-colors
+                  bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700
+                  text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700"
+              >
                 Suppress Rule
               </button>
-              <button className="flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all
-                bg-red-600 hover:bg-red-700 text-white
-                shadow-sm shadow-red-600/20 hover:shadow-md hover:shadow-red-600/30">
+              <button
+                onClick={handleApplyPatch}
+                className="flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all
+                  bg-red-600 hover:bg-red-700 text-white
+                  shadow-sm shadow-red-600/20 hover:shadow-md hover:shadow-red-600/30"
+              >
                 Apply Patch
               </button>
             </div>
           </>
         )}
       </div>
+
+      {/* Toast stack */}
+      <ToastStack toasts={toasts} onDismiss={dismissToast} />
     </>
   );
 };

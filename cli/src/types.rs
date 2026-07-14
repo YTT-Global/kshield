@@ -31,4 +31,5 @@ pub struct ScanPayload {
     pub filename: String,
     pub content: String,
     pub commit_sha: Option<String>,
+    pub suppress: crate::config::SuppressConfig,
 }
