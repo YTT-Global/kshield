@@ -2,7 +2,7 @@
 
 All notable changes to KShield are documented here.
 
-## [1.0.0] — 2026-07-13
+## [1.0.0] — 2026-07-14
 
 ### Initial Release
 
@@ -53,3 +53,14 @@ KShield is a local-first AI code review firewall designed to catch secrets, brok
 - Deterministic embedding generation using MD5.
 - GitHub Actions CI for automated testing, security scanning, and cross-platform build verification.
 - Multi-platform binary publishing via GitHub Actions for macOS (arm64, x86) and Linux (x86, arm64).
+
+#### Dashboard & Design System
+- **Design System**: Full component library at `frontend/src/design-system/` — design tokens, `Button`, `Badge` (Severity / Method / Status / Label), `Card`, `CodeBlock` with copy, `DiffViewer`, `Table`, `FieldTable`, `Alert`, `StatusDot`, `LivePill`, `PageHeader`, `SectionHeader`, `Drawer`, and `EmptyState`.
+- **Custom SVG Icons**: `WorkspacesIcon`, `StructuralHazardsIcon`, and `EngineActiveIcon` — purpose-built for the dashboard panel headers.
+- **Typography**: Exo 2 (sans-serif) + JetBrains Mono loaded via Google Fonts — consistent across all views.
+- **In-app Documentation**: "How to Use" page in the sidebar with two tabs — User Guide (Quick Start, Install, CLI, What It Detects, Managed Directory) and API Reference (endpoint overview, full request/response schema, error codes).
+- **API Reference tab**: Documents `GET /health` and `POST /api/v1/scan` with request body table, example JSON, response schema, and error code reference.
+
+#### Bug Fixes
+- Fixed `NameError: CodeExecutionPayload` in `backend/app/api/v1/scan.py` — renamed to match the defined `ScanRequest` Pydantic model.
+- Fixed stale `.venv` interpreter path after project rename from `ai-firewall` to `kshield`.
