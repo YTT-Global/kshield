@@ -3,11 +3,11 @@ import { Menu, Shield } from 'lucide-react';
 import { Sidebar } from './components/Sidebar';
 import { Dashboard } from './components/Dashboard';
 import { Settings } from './components/Settings';
-
+import { Docs } from './components/Docs';
 type Theme = 'light' | 'dark';
 
 export const App: React.FC = () => {
-  const [currentView, setView] = useState<'dashboard' | 'settings'>('dashboard');
+  const [currentView, setView] = useState<'dashboard' | 'settings' | 'docs'>('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [theme, setTheme] = useState<Theme>(() => {
     const stored = localStorage.getItem('kshield-theme');
@@ -22,7 +22,7 @@ export const App: React.FC = () => {
     localStorage.setItem('kshield-theme', theme);
   }, [theme]);
 
-  const handleSetView = (view: 'dashboard' | 'settings') => {
+  const handleSetView = (view: 'dashboard' | 'settings' | 'docs') => {
     setView(view);
     setSidebarOpen(false);
   };
@@ -69,7 +69,7 @@ export const App: React.FC = () => {
       <main className="flex-1 lg:pl-64 min-w-0 pt-14 lg:pt-0">
         <div className="px-4 py-6 sm:px-6 lg:px-10 lg:py-8">
           <div className="max-w-[1400px] mx-auto">
-            {currentView === 'dashboard' ? <Dashboard /> : <Settings />}
+            {currentView === 'dashboard' ? <Dashboard /> : currentView === 'settings' ? <Settings /> : <Docs />}
           </div>
         </div>
       </main>
