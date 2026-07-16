@@ -74,6 +74,24 @@ jobs:
         env:
           GITHUB_PAGES: true
 
+  # ── VS Code extension ─────────────────────────────────────────────────────────
+  vscode-extension:
+    name: VS Code extension · type check & build
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: vscode-extension/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+        working-directory: vscode-extension
+      - name: Compile
+        run: npm run compile
+        working-directory: vscode-extension
+
   # ── PR scan (pull requests only) ──────────────────────────────────────────────
   pr-scan:
     name: KShield · scan changed files

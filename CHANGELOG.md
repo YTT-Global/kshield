@@ -2,6 +2,11 @@
 
 All notable changes to KShield are documented here.
 
+## [Unreleased]
+
+### Added
+- **VS Code extension** (`vscode-extension/`): inline security warnings as you type. Scans on file save (debounced), surfaces findings as editor diagnostics with hover explanations, and offers Quick Fix actions to apply remediation patches or suppress a rule globally. Talks to the same local backend the CLI manages.
+
 ## [1.0.0] — 2026-07-14
 
 ### Initial Release

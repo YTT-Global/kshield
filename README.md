@@ -232,6 +232,14 @@ kshield/
 │           └── components/     # Badge · Button · Card · CodeBlock · Table
 │                               # Alert · StatusDot · PageHeader · Drawer
 │                               # EmptyState · Icons (SVG)
+├── vscode-extension/            # VS Code extension — inline warnings as you type
+│   └── src/
+│       ├── extension.ts        # Activation, save watcher, command wiring
+│       ├── apiClient.ts        # Backend HTTP client (/health, /api/v1/scan, /api/v1/suppress)
+│       ├── diagnostics.ts      # Finding → vscode.Diagnostic mapping
+│       ├── hoverProvider.ts    # ELI5 explanations on hover
+│       ├── codeActionProvider.ts # Quick Fix: apply patch / suppress rule
+│       └── patch.ts            # Unified diff applier for remediation patches
 ├── npm/                        # npx kshield wrapper package
 ├── homebrew/kshield.rb         # Homebrew formula
 ├── install.sh                  # curl | bash installer
@@ -314,7 +322,7 @@ The backend exposes a REST API at `http://localhost:8000`. Full reference is ava
 - [ ] Connect React dashboard to live backend endpoints
 - [ ] Filter chips (CRITICAL / HIGH / MEDIUM) on anomaly list
 - [ ] Toast notifications for patch application
-- [ ] VS Code extension — inline warnings as you type
+- [x] VS Code extension — inline warnings as you type
 - [ ] Windows support
 - [ ] Tauri desktop build packaging
 

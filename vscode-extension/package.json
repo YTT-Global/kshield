@@ -1,0 +1,96 @@
+{
+  "name": "kshield-vscode",
+  "displayName": "KShield — Inline Security Scanner",
+  "description": "Real-time inline security warnings, secret detection, and one-click fixes powered by your local KShield backend.",
+  "version": "0.1.0",
+  "publisher": "ytt-global",
+  "private": true,
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Linters",
+    "Other"
+  ],
+  "keywords": [
+    "security",
+    "secrets",
+    "linter",
+    "kshield"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "kshield.scanActiveFile",
+        "title": "KShield: Scan Current File",
+        "category": "KShield"
+      },
+      {
+        "command": "kshield.applyFix",
+        "title": "KShield: Apply Suggested Fix",
+        "category": "KShield"
+      },
+      {
+        "command": "kshield.suppressRule",
+        "title": "KShield: Suppress This Rule",
+        "category": "KShield"
+      },
+      {
+        "command": "kshield.restartBackendCheck",
+        "title": "KShield: Check Backend Connection",
+        "category": "KShield"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "kshield.scanActiveFile",
+          "when": "editorTextFocus",
+          "group": "kshield"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "KShield",
+      "properties": {
+        "kshield.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable KShield inline scanning."
+        },
+        "kshield.backendUrl": {
+          "type": "string",
+          "default": "http://127.0.0.1:8000",
+          "description": "Base URL of the local KShield backend (same one the CLI manages via `kshield start`)."
+        },
+        "kshield.scanOnSave": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically scan files when they are saved."
+        },
+        "kshield.debounceMs": {
+          "type": "number",
+          "default": 800,
+          "minimum": 0,
+          "description": "Milliseconds to wait after a save before submitting the file for scanning."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.4.5"
+  }
+}
