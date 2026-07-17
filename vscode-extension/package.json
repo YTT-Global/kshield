@@ -3,7 +3,7 @@
   "displayName": "KShield — Inline Security Scanner",
   "description": "Real-time inline security warnings, secret detection, and one-click fixes powered by your local KShield backend.",
   "version": "0.1.0",
-  "publisher": "ytt-global",
+  "publisher": "YTTGlobal",
   "license": "MIT",
   "icon": "icon.png",
   "galleryBanner": {

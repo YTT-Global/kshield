@@ -203,7 +203,7 @@ Reload the VS Code window (**Developer: Reload Window**) to activate it.
 
 **Publish to the Marketplace:**
 ```bash
-npx @vscode/vsce login ytt-global
+npx @vscode/vsce login YTTGlobal
 npx @vscode/vsce publish
 ```
 Requires a publisher access token and the `repository` + `LICENSE` fields already present in `vscode-extension/package.json`.

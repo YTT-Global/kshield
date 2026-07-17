@@ -58,8 +58,8 @@ Reload the VS Code window afterwards (**Developer: Reload Window**) to activate 
 
 ## Publishing to the Marketplace
 
-1. Create a publisher access token (Azure DevOps PAT) for the `ytt-global` publisher.
-2. `npx @vscode/vsce login ytt-global`
+1. Create a publisher access token (Azure DevOps PAT) for the `YTTGlobal` publisher.
+2. `npx @vscode/vsce login YTTGlobal`
 3. `npx @vscode/vsce publish` (or bump the version first with `vsce publish patch|minor|major`)
 
 Requires `repository` and `LICENSE` to be present — both are already included in this package.
