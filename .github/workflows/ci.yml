@@ -98,6 +98,9 @@ jobs:
     runs-on: ubuntu-22.04
     if: github.event_name == 'pull_request'
     needs: [backend]
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -117,7 +120,9 @@ jobs:
       - name: Get changed files
         run: |
           git diff --name-only origin/${{ github.base_ref }}...HEAD \
-            --diff-filter=ACM > /tmp/changed_files.txt
+            --diff-filter=ACM \
+            | grep -vE '(^|/)(package-lock\.json|yarn\.lock|pnpm-lock\.yaml|Cargo\.lock)$' \
+            > /tmp/changed_files.txt || true
           cat /tmp/changed_files.txt
       - name: Scan changed files
         id: scan
