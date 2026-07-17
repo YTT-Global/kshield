@@ -4,8 +4,18 @@ All notable changes to KShield are documented here.
 
 ## [Unreleased]
 
+## [1.1.0] — 2026-07-17
+
 ### Added
 - **VS Code extension** (`vscode-extension/`): inline security warnings as you type. Scans on file save (debounced), surfaces findings as editor diagnostics with hover explanations, and offers Quick Fix actions to apply remediation patches or suppress a rule globally. Talks to the same local backend the CLI manages.
+- **VS Code extension packaging**: `repository` field added to `vscode-extension/package.json` and a bundled `LICENSE` so `vsce package` produces a clean `.vsix` with no warnings — installable locally via `code --install-extension` or publishable to the Marketplace.
+- **Root `LICENSE` file** (MIT) added, matching the license already declared in `pyproject.toml` and `vscode-extension/package.json`.
+- **PyPI publishing**: release pipeline now builds and publishes the backend package to PyPI on every non-prerelease tag.
+
+### Fixed
+- All download routes (curl installer, npm installer, Homebrew formula, pip package URLs, CLI's own backend-download URL, VS Code extension repository link, in-app Docs page) pointed at the old GitHub org `YTTGlobalServices` and 404'd after the org moved to `YTT-Global`. Repointed everywhere, including two spots (`cli/src/setup.rs`, `frontend/src/components/Docs.tsx`) that a prior pass missed.
+- Homebrew formula's release-CI step was patching the wrong SHA-256 placeholder strings for macOS builds, leaving stale checksums in published formula updates.
+- `backend/requirements.txt` was missing `numpy`, despite `app/engine/model.py` importing it directly — added `numpy>=1.26` as an explicit dependency instead of relying on it being pulled in transitively by `tensorflow`.
 
 ## [1.0.0] — 2026-07-14
 

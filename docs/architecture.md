@@ -4,10 +4,11 @@
 
 KShield is a **local-first** security analysis system. All code scanning, ML inference, and remediation generation happen on the developer's machine. No source code is transmitted to external servers.
 
-Three entry points:
+Four entry points:
 - **`kshield init`** — one-time setup per repo: installs hook, downloads backend, starts it
 - **Rust CLI** — `hook` subcommand runs on every `git commit`, blocks CRITICAL/HIGH findings
 - **React Dashboard** — real-time telemetry UI, optionally wrapped in a Tauri native window
+- **VS Code Extension** — inline diagnostics as you type, talking to the same local backend
 
 ---
 
@@ -56,6 +57,12 @@ Three entry points:
 ║  │  React 19 Dashboard  (port 5173 dev / port 3000 prod)               │ ║
 ║  │  · Security telemetry · Slide-over anomaly detail                    │ ║
 ║  │  · Rule toggles       · Light / dark theme                           │ ║
+║  └─────────────────────────────────────────────────────────────────────┘ ║
+║                                                                           ║
+║  ┌─────────────────────────────────────────────────────────────────────┐ ║
+║  │  VS Code Extension  (.vsix, installed locally or via Marketplace)    │ ║
+║  │  · Scan on save (debounced)     · Diagnostics + hover ELI5           │ ║
+║  │  · Quick Fix: apply patch / suppress rule · Status bar health check  │ ║
 ║  └─────────────────────────────────────────────────────────────────────┘ ║
 ║                                                                           ║
 ╚═════════════════════════════╪═════════════════════════════════════════════╝
@@ -196,12 +203,14 @@ Developer pushes  git tag v1.0.0
 | React app | `frontend/src/` | `App.tsx` · `main.tsx` · `index.css` |
 | React components | `frontend/src/components/` | `Dashboard.tsx` · `Settings.tsx` · `Sidebar.tsx` |
 | TypeScript types | `frontend/src/types/` | `scan.ts` |
+| VS Code extension | `vscode-extension/src/` | `extension.ts` · `apiClient.ts` · `diagnostics.ts` · `hoverProvider.ts` · `codeActionProvider.ts` · `patch.ts` |
 | npm wrapper | `npm/` | `package.json` · `bin/kshield.js` · `scripts/install.js` |
 | pip package | `/` | `pyproject.toml` · `backend/kshield_backend/cli.py` |
 | curl installer | `/` | `install.sh` |
 | Homebrew formula | `homebrew/` | `kshield.rb` |
 | Tauri wrapper | `src-tauri/` | `src/main.rs` · `tauri.conf.json` |
 | CI pipeline | `.github/workflows/` | `kshield-ci.yml` · `release.yml` |
+| Licensing | `/`, `vscode-extension/` | `LICENSE` (MIT, root project + bundled into the extension `.vsix`) |
 | Docs | `docs/` | `architecture.md` · `setup.md` |
 
 ---

@@ -55,7 +55,7 @@ Follow [docs/setup.md](docs/setup.md) to get the full stack running locally.
 
 Quick start:
 ```bash
-git clone https://github.com/YTTGlobalServices/kshield.git
+git clone https://github.com/YTT-Global/kshield.git
 cd kshield
 
 # Backend
@@ -69,6 +69,9 @@ cd ../frontend && npm install && npm run dev
 # CLI (dev build)
 cd ../cli && cargo build
 ./target/debug/kshield status
+
+# VS Code extension (dev build — press F5 in VS Code to launch it)
+cd ../vscode-extension && npm install && npm run compile
 ```
 
 Or use the managed install for the backend:
@@ -107,6 +110,9 @@ All branches must fork from `main`.
 
    # Frontend
    cd frontend && npm run build && npm run lint
+
+   # VS Code extension
+   cd vscode-extension && npm run compile
    ```
 
 4. Write a clear PR description:

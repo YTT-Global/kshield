@@ -45,6 +45,25 @@ npm run compile   # or npm run watch
 
 Then press F5 in VS Code (with this folder open) to launch an Extension Development Host.
 
+## Installing locally (without the Marketplace)
+
+Package the extension into a `.vsix` and install it directly into your own VS Code:
+
+```bash
+npx @vscode/vsce package                              # produces kshield-vscode-<version>.vsix
+code --install-extension kshield-vscode-<version>.vsix --force
+```
+
+Reload the VS Code window afterwards (**Developer: Reload Window**) to activate it.
+
+## Publishing to the Marketplace
+
+1. Create a publisher access token (Azure DevOps PAT) for the `ytt-global` publisher.
+2. `npx @vscode/vsce login ytt-global`
+3. `npx @vscode/vsce publish` (or bump the version first with `vsce publish patch|minor|major`)
+
+Requires `repository` and `LICENSE` to be present — both are already included in this package.
+
 ## Known limitations
 
 - Findings are keyed by line number only — if the backend restarts mid-edit, positions may shift until the next scan.

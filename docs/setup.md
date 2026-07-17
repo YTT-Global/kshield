@@ -19,7 +19,7 @@ Complete instructions for running KShield — from first install through full pr
 ## Quick Install (Recommended)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/YTTGlobalServices/kshield/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/YTT-Global/kshield/main/install.sh | bash
 ```
 
 Then inside any git repo:
@@ -36,7 +36,7 @@ That's it. The backend is downloaded, a Python venv is created, the database is 
 
 ### curl | bash
 ```bash
-curl -fsSL https://raw.githubusercontent.com/YTTGlobalServices/kshield/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/YTT-Global/kshield/main/install.sh | bash
 ```
 Downloads a pre-built binary for your platform and installs it to `/usr/local/bin`.
 
@@ -60,7 +60,7 @@ kshield init        # install git hook
 
 ### Build from source (Rust)
 ```bash
-git clone https://github.com/YTTGlobalServices/kshield.git
+git clone https://github.com/YTT-Global/kshield.git
 cd kshield/cli
 cargo build --release
 cp target/release/kshield /usr/local/bin/
@@ -178,6 +178,35 @@ npm run dev
 Open **http://localhost:5173**
 
 The dashboard uses the same backend at `http://127.0.0.1:8000`. Make sure the backend is running (`kshield start`) before opening the dashboard.
+
+---
+
+## VS Code Extension
+
+Inline diagnostics in the editor, powered by the same local backend. It does not bundle or start the backend — start it first (`kshield start`, or the manual `uvicorn` command above).
+
+**Run from source (Extension Development Host):**
+```bash
+cd vscode-extension
+npm install
+npm run compile   # or npm run watch
+```
+Then open the folder in VS Code and press **F5** to launch a Development Host with the extension loaded.
+
+**Install locally as a real extension (no Marketplace needed):**
+```bash
+cd vscode-extension
+npx @vscode/vsce package                                # → kshield-vscode-<version>.vsix
+code --install-extension kshield-vscode-<version>.vsix --force
+```
+Reload the VS Code window (**Developer: Reload Window**) to activate it.
+
+**Publish to the Marketplace:**
+```bash
+npx @vscode/vsce login ytt-global
+npx @vscode/vsce publish
+```
+Requires a publisher access token and the `repository` + `LICENSE` fields already present in `vscode-extension/package.json`.
 
 ---
 

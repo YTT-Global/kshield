@@ -2,7 +2,7 @@
 # KShield installer — curl -fsSL https://get.kshield.dev | bash
 set -euo pipefail
 
-REPO="YTTGlobalServices/kshield"
+REPO="YTT-Global/kshield"
 VERSION="${KSHIELD_VERSION:-latest}"
 INSTALL_DIR="${KSHIELD_INSTALL_DIR:-/usr/local/bin}"
 

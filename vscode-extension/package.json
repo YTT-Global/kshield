@@ -6,6 +6,11 @@
   "publisher": "ytt-global",
   "private": true,
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/YTT-Global/kshield.git",
+    "directory": "vscode-extension"
+  },
   "engines": {
     "vscode": "^1.85.0"
   },
