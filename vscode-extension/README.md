@@ -2,6 +2,11 @@
 
 Inline security warnings as you type, powered by your local KShield backend — the same engine the pre-commit hook uses, just faster feedback.
 
+**[Install from the VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=YTTGlobal.kshield-vscode)** — search "KShield" in the Extensions view, or run:
+```bash
+code --install-extension YTTGlobal.kshield-vscode
+```
+
 ## What it does
 
 - Scans a file every time you save it (debounced, so rapid saves don't spam the backend).
@@ -45,7 +50,7 @@ npm run compile   # or npm run watch
 
 Then press F5 in VS Code (with this folder open) to launch an Extension Development Host.
 
-## Installing locally (without the Marketplace)
+## Installing locally (from source, without the Marketplace)
 
 Package the extension into a `.vsix` and install it directly into your own VS Code:
 
@@ -56,13 +61,12 @@ code --install-extension kshield-vscode-<version>.vsix --force
 
 Reload the VS Code window afterwards (**Developer: Reload Window**) to activate it.
 
-## Publishing to the Marketplace
+## Publishing updates to the Marketplace
 
-1. Create a publisher access token (Azure DevOps PAT) for the `YTTGlobal` publisher.
-2. `npx @vscode/vsce login YTTGlobal`
-3. `npx @vscode/vsce publish` (or bump the version first with `vsce publish patch|minor|major`)
+Already live as [`YTTGlobal.kshield-vscode`](https://marketplace.visualstudio.com/items?itemName=YTTGlobal.kshield-vscode). To ship a new version:
 
-Requires `repository` and `LICENSE` to be present — both are already included in this package.
+1. `npx @vscode/vsce login YTTGlobal` (needs an Azure DevOps PAT scoped to Marketplace → Manage, if not already logged in).
+2. `npx @vscode/vsce publish patch|minor|major` — bumps the version in `package.json` and publishes in one step.
 
 ## Known limitations
 

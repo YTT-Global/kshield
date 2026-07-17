@@ -4,6 +4,9 @@ All notable changes to KShield are documented here.
 
 ## [Unreleased]
 
+### Added
+- `kshield-vscode` is now live on the VS Code Marketplace as [`YTTGlobal.kshield-vscode`](https://marketplace.visualstudio.com/items?itemName=YTTGlobal.kshield-vscode). Docs updated to lead with `code --install-extension YTTGlobal.kshield-vscode` ahead of the manual `.vsix` build steps.
+
 ## [1.1.0] — 2026-07-17
 
 ### Added

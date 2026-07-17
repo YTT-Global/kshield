@@ -4,6 +4,7 @@
 
 [![Build](https://img.shields.io/github/actions/workflow/status/YTT-Global/kshield/kshield-ci.yml?label=CI&style=flat-square)](https://github.com/YTT-Global/kshield/actions)
 [![Release](https://img.shields.io/github/v/release/YTT-Global/kshield?style=flat-square)](https://github.com/YTT-Global/kshield/releases/latest)
+[![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/YTTGlobal.kshield-vscode?style=flat-square&label=VS%20Code%20Marketplace)](https://marketplace.visualstudio.com/items?itemName=YTTGlobal.kshield-vscode)
 [![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
 [![Stack](https://img.shields.io/badge/stack-Rust%20·%20FastAPI%20·%20React-red?style=flat-square)](#tech-stack)
 
@@ -257,6 +258,13 @@ kshield/
 
 Inline diagnostics as you type — scans on save, shows squiggles with hover explanations, and offers Quick Fix actions to apply a patch or suppress a rule. Talks to the same local backend the CLI manages.
 
+**Install from the Marketplace (recommended):** search "KShield" in the Extensions view, or install directly:
+```bash
+code --install-extension YTTGlobal.kshield-vscode
+```
+Or via the [Marketplace listing](https://marketplace.visualstudio.com/items?itemName=YTTGlobal.kshield-vscode).
+
+**Build from source instead:**
 ```bash
 cd vscode-extension
 npm install
@@ -264,7 +272,7 @@ npx @vscode/vsce package
 code --install-extension kshield-vscode-<version>.vsix --force
 ```
 
-See [vscode-extension/README.md](vscode-extension/README.md) for settings, commands, and Marketplace publishing steps.
+See [vscode-extension/README.md](vscode-extension/README.md) for settings and commands.
 
 ---
 

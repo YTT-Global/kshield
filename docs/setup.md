@@ -185,6 +185,12 @@ The dashboard uses the same backend at `http://127.0.0.1:8000`. Make sure the ba
 
 Inline diagnostics in the editor, powered by the same local backend. It does not bundle or start the backend — start it first (`kshield start`, or the manual `uvicorn` command above).
 
+**Install from the Marketplace (recommended):** search "KShield" in the Extensions view, or:
+```bash
+code --install-extension YTTGlobal.kshield-vscode
+```
+Listing: https://marketplace.visualstudio.com/items?itemName=YTTGlobal.kshield-vscode
+
 **Run from source (Extension Development Host):**
 ```bash
 cd vscode-extension
@@ -201,12 +207,11 @@ code --install-extension kshield-vscode-<version>.vsix --force
 ```
 Reload the VS Code window (**Developer: Reload Window**) to activate it.
 
-**Publish to the Marketplace:**
+**Publish an update to the Marketplace:**
 ```bash
-npx @vscode/vsce login YTTGlobal
-npx @vscode/vsce publish
+npx @vscode/vsce login YTTGlobal   # if not already logged in
+npx @vscode/vsce publish patch|minor|major
 ```
-Requires a publisher access token and the `repository` + `LICENSE` fields already present in `vscode-extension/package.json`.
 
 ---
 
