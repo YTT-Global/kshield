@@ -176,6 +176,8 @@ jobs:
     needs: [publish]
     if: "!contains(github.ref_name, '-')"
     runs-on: ubuntu-22.04
+    permissions:
+      id-token: write
 
     steps:
       - uses: actions/checkout@v4
@@ -192,5 +194,3 @@ jobs:
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          password: ${{ secrets.PYPI_API_TOKEN }}
