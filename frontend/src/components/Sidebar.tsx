@@ -111,7 +111,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </svg>
           <div className="text-center">
             <h1 className="font-bold text-base tracking-widest uppercase text-slate-900 dark:text-white leading-none">KShield</h1>
-            <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono tracking-widest mt-1 block">v1.0.0 · LOCAL</span>
+            <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono tracking-widest mt-1 block">v1.1.0 · LOCAL</span>
           </div>
         </div>
         {/* Mobile close button — absolute so it doesn't break centered layout */}
