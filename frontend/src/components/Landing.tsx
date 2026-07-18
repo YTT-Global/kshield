@@ -116,10 +116,11 @@ const DETECTIONS: { Icon: React.FC<{ size: number; className: string }>; label: 
 ];
 
 const INSTALL_TABS = [
-  { label: 'curl', cmd: 'curl -fsSL https://raw.githubusercontent.com/YTT-Global/kshield/main/install.sh | bash' },
-  { label: 'brew', cmd: 'brew install YTT-Global/tap/kshield' },
-  { label: 'npm',  cmd: 'npx kshield init' },
-  { label: 'pip',  cmd: 'pip install kshield && kshield-backend &' },
+  { label: 'curl',      cmd: 'curl -fsSL https://raw.githubusercontent.com/YTT-Global/kshield/main/install.sh | bash' },
+  { label: 'brew',      cmd: 'brew install ytt-global/tap/kshield' },
+  { label: 'npm',       cmd: 'npx kshield init' },
+  { label: 'pip',       cmd: 'pip install kshield && kshield-backend &' },
+  { label: 'VS Code',   cmd: 'code --install-extension YTTGlobal.kshield-vscode' },
 ];
 
 const STATS = [
@@ -137,8 +138,9 @@ const FEATURES = [
   'Suppression config via .kshield.yml',
   'React dashboard with live scan telemetry',
   'Tauri desktop app for native experience',
+  'VS Code extension with inline diagnostics',
   'GitHub Actions CI integration built-in',
-  'Homebrew · npm · pip · curl install paths',
+  'Homebrew · npm · pip · curl · VS Code install paths',
 ];
 
 // ── Landing ──────────────────────────────────────────────────────────────────
@@ -165,7 +167,7 @@ export const Landing: React.FC = () => {
           <div className="flex items-center gap-3">
             <KShieldLogo size={26} />
             <span className="font-bold tracking-widest uppercase text-sm">KShield</span>
-            <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700 px-1.5 py-0.5 rounded">v1.0.0</span>
+            <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700 px-1.5 py-0.5 rounded">v1.1.0</span>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -307,16 +309,16 @@ export const Landing: React.FC = () => {
         <div className="max-w-2xl mx-auto text-center">
           <p className="text-[10px] font-bold font-mono text-red-500 uppercase tracking-widest mb-3">Install</p>
           <h2 className="text-3xl sm:text-4xl font-black mb-4">Pick your path</h2>
-          <p className="text-slate-600 dark:text-slate-400 text-sm mb-8">All four point to the same binary and the same experience.</p>
+          <p className="text-slate-600 dark:text-slate-400 text-sm mb-8">All paths point to the same binary and the same experience.</p>
 
           {/* Install block always dark — it's a code terminal */}
           <div className="rounded-xl border border-slate-700 bg-slate-900 overflow-hidden text-left">
-            <div className="flex border-b border-slate-800">
+            <div className="flex border-b border-slate-800 overflow-x-auto">
               {INSTALL_TABS.map((t, i) => (
                 <button
                   key={t.label}
                   onClick={() => setTab(i)}
-                  className={`px-5 py-3 text-sm font-mono font-semibold transition-colors ${
+                  className={`flex-shrink-0 px-5 py-3 text-sm font-mono font-semibold transition-colors ${
                     tab === i
                       ? 'text-white border-b-2 border-red-500 bg-slate-800/50'
                       : 'text-slate-500 hover:text-slate-300'

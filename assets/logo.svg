@@ -1,0 +1,62 @@
+<svg viewBox="0 0 48 54" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="eb" x1="24" y1="1" x2="24" y2="53" gradientUnits="userSpaceOnUse">
+      <stop offset="0%"   stop-color="#ff4d4d"/>
+      <stop offset="28%"  stop-color="#cc0000"/>
+      <stop offset="68%"  stop-color="#7a0000"/>
+      <stop offset="100%" stop-color="#180000"/>
+    </linearGradient>
+    <radialGradient id="eg" cx="33%" cy="13%" r="44%">
+      <stop offset="0%"   stop-color="rgba(255,255,255,0.24)"/>
+      <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+    </radialGradient>
+    <radialGradient id="ed" cx="50%" cy="96%" r="62%">
+      <stop offset="0%"   stop-color="rgba(0,0,0,0.65)"/>
+      <stop offset="100%" stop-color="rgba(0,0,0,0)"/>
+    </radialGradient>
+    <filter id="ekf" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="1.5" stdDeviation="2" flood-color="rgba(0,0,0,0.55)"/>
+    </filter>
+  </defs>
+
+  <!-- Cast shadow -->
+  <path d="M24 2L43 9V27C43 39.5 34.5 48.5 24 52C13.5 48.5 5 39.5 5 27V9L24 2Z"
+        fill="rgba(80,0,0,0.45)"
+        transform="translate(0,3) scale(1.03,1) translate(-0.72,0)"/>
+
+  <!-- Main body -->
+  <path d="M24 2L43 9V27C43 39.5 34.5 48.5 24 52C13.5 48.5 5 39.5 5 27V9L24 2Z"
+        fill="url(#eb)"/>
+  <!-- Gloss -->
+  <path d="M24 2L43 9V27C43 39.5 34.5 48.5 24 52C13.5 48.5 5 39.5 5 27V9L24 2Z"
+        fill="url(#eg)"/>
+  <!-- Depth -->
+  <path d="M24 2L43 9V27C43 39.5 34.5 48.5 24 52C13.5 48.5 5 39.5 5 27V9L24 2Z"
+        fill="url(#ed)"/>
+
+  <!-- Rim highlight (left) -->
+  <path d="M24 2L5 9V27C5 39.5 13.5 48.5 24 52"
+        fill="none" stroke="rgba(255,180,180,0.35)" stroke-width="1.5" stroke-linecap="round"/>
+  <!-- Rim shadow (right) -->
+  <path d="M24 2L43 9V27C43 39.5 34.5 48.5 24 52"
+        fill="none" stroke="rgba(0,0,0,0.55)" stroke-width="1.5" stroke-linecap="round"/>
+
+  <!-- Inner bevel -->
+  <path d="M24 6.5L39.5 13V27C39.5 37.5 32.5 45.5 24 48.5C15.5 45.5 8.5 37.5 8.5 27V13L24 6.5Z"
+        fill="none" stroke="rgba(255,255,255,0.09)" stroke-width="1"/>
+
+  <!-- K vertical bar -->
+  <line x1="15.5" y1="17" x2="15.5" y2="39"
+        stroke="white" stroke-width="6" stroke-linecap="square" filter="url(#ekf)"/>
+  <!-- K upper arm -->
+  <line x1="15.5" y1="28" x2="33" y2="17"
+        stroke="white" stroke-width="5" stroke-linecap="butt" filter="url(#ekf)"/>
+  <!-- K lower arm -->
+  <line x1="15.5" y1="28" x2="33" y2="39"
+        stroke="white" stroke-width="5" stroke-linecap="butt" filter="url(#ekf)"/>
+
+  <!-- Forward arrow -->
+  <path d="M35 26 L39 27.5 L35 29"
+        fill="none" stroke="rgba(255,255,255,0.32)"
+        stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
