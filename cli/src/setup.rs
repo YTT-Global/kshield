@@ -145,7 +145,7 @@ async fn download_backend(dest: &PathBuf) -> Result<()> {
     // Derive the release version from this binary's version
     let version = env!("CARGO_PKG_VERSION");
     let url = format!(
-        "https://github.com/YTTGlobalServices/kshield/releases/download/v{version}/backend.tar.gz"
+        "https://github.com/YTT-Global/kshield/releases/download/v{version}/backend.tar.gz"
     );
 
     let client = reqwest::Client::new();

@@ -85,13 +85,13 @@ const DETECTION_RULES = [
     title: 'AI Hallucination Placeholders',
     severity: 'MEDIUM',
     description: '60+ patterns across five categories: placeholder markers, credential stubs, hallucinated imports, AI generation artifacts, and dead code stubs. Test files (test_*.py, *_test.py, files under tests/) are automatically exempt.',
-    examples: ['TODO: verify with production', 'password = "password"', 'import fake_module', 'raise NotImplementedError'],
+    examples: ['TODO: verify before prod', 'password = "hunter2"', 'using a fake_ prefixed import', 'raise NotImplemented (stub)'],
   },
   {
     title: 'Dependency Hallucinations',
     severity: 'CRITICAL',
     description: 'Verifies every import against the official registry for Python (PyPI), JavaScript/TypeScript (npm), Go (Go module proxy), and Ruby (RubyGems). Standard library modules are always skipped. Network timeouts fail open — the commit is not blocked.',
-    examples: ['import non_existent_package', 'from fake_ai_sdk import generate'],
+    examples: ['import non_existent_package', 'importing from a fake_ai_sdk package'],
   },
 ];
 
@@ -99,7 +99,7 @@ const INSTALL_METHODS = [
   {
     label: 'curl (recommended)',
     platform: 'macOS · Linux',
-    code: 'curl -fsSL https://raw.githubusercontent.com/YTTGlobalServices/kshield/main/install.sh | bash',
+    code: 'curl -fsSL https://raw.githubusercontent.com/YTT-Global/kshield/main/install.sh | bash',
   },
   {
     label: 'Homebrew',
@@ -268,7 +268,7 @@ export const Docs: React.FC = () => {
                 </p>
                 <CodeBlock code={`✓  Git repository detected
 ✓  Pre-commit hook installed  (.git/hooks/pre-commit)
-!  Backend not installed — running setup (one-time)...
+!  Backend not installed — running setup (one-time)…
 ✓  Python environment ready   (~/.kshield/venv)
 ✓  Backend started            (SQLite, no Docker needed)
 ✓  Ready. Make a commit to run your first scan.`} />
@@ -277,7 +277,7 @@ export const Docs: React.FC = () => {
                   Now make any commit — KShield runs automatically and blocks issues before they reach your remote:
                 </p>
                 <CodeBlock code={`KShield · Pre-Commit Scan
-Scanning 2 staged files...
+Scanning 2 staged files…
 
   server.py      ██  2 issues
   utils/auth.py  ██  Clean
@@ -286,7 +286,7 @@ COMMIT BLOCKED · 2 issues found
 
   CRITICAL   server.py:12
   Hardcoded Secret · GitHub Token detected
-  api_key = 'ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
+  api_key = 'ghp_<redacted-example-token>'
   ↳ ELI5: Move this value to an environment variable → os.getenv('API_KEY')
 
   HIGH       server.py:28

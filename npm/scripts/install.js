@@ -11,7 +11,7 @@ const path = require("path");
 const os = require("os");
 const { execSync } = require("child_process");
 
-const REPO = "YTTGlobalServices/kshield";
+const REPO = "YTT-Global/kshield";
 const VERSION = process.env.KSHIELD_VERSION || require("../package.json").version;
 const BINARY_DIR = path.join(__dirname, "..", "bin");
 
