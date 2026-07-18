@@ -136,7 +136,32 @@ This document is the authoritative system manual for AI development agents (Clau
 
 ---
 
-## 6. Integrity Invariants — Never Break These
+## 6. VS Code Extension (`/vscode-extension`)
+
+**Stack:** TypeScript · VS Code Extension API · `@vscode/vsce`
+
+### File Responsibilities
+
+| File | Owns |
+|---|---|
+| `src/extension.ts` | Activation, save-watcher wiring, command registration |
+| `src/apiClient.ts` | HTTP client for the local backend (`/health`, `/api/v1/scan`, `/api/v1/suppress`) |
+| `src/diagnostics.ts` | Maps backend findings to `vscode.Diagnostic` objects |
+| `src/hoverProvider.ts` | ELI5 explanation shown on hover over a squiggle |
+| `src/codeActionProvider.ts` | Quick Fix actions — apply patch / suppress rule |
+| `src/patch.ts` | Applies unified-diff `patch_diff` strings from remediation findings |
+| `src/statusBar.ts` | Backend reachability indicator |
+
+### Extension Rules
+
+- **The extension never bundles or starts the backend.** It only talks to it over HTTP at `kshield.backendUrl` (default `http://127.0.0.1:8000`). Do not add process-spawning logic here — that belongs to the CLI (`cli/src/setup.rs`).
+- **Packaging**: `package.json` must keep a valid `repository` field and the package must ship with a `LICENSE` file (copied from the repo root) — `vsce package` treats both as required for a warning-free `.vsix`. Do not remove either without also updating `.vscodeignore`.
+- **Auto-apply is patch-only**: only findings carrying a `patch_diff` (currently Broken Access Control) can go through `codeActionProvider.ts`'s apply-fix path. All other finding types must fall back to "Suppress This Rule" — do not fabricate a patch for finding types the backend doesn't provide one for.
+- **Changing the finding schema**: if `app/api/v1/scan.py`'s response model changes, update `src/types.ts` in lockstep (mirrors the same contract used by `frontend/src/types/scan.ts` and `cli/src/types.rs`).
+
+---
+
+## 7. Integrity Invariants — Never Break These
 
 | # | Rule |
 |---|---|

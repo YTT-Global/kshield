@@ -1,12 +1,12 @@
 {
   "name": "kshield",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Local-first AI code review firewall — catches secrets, broken access control, and AI hallucinations before they reach your main branch.",
   "keywords": ["security", "code-review", "pre-commit", "git-hooks", "secrets-detection"],
-  "homepage": "https://github.com/YTTGlobalServices/kshield",
+  "homepage": "https://github.com/YTT-Global/kshield",
   "repository": {
     "type": "git",
-    "url": "https://github.com/YTTGlobalServices/kshield.git"
+    "url": "https://github.com/YTT-Global/kshield.git"
   },
   "license": "MIT",
   "bin": {

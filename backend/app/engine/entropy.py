@@ -1,5 +1,6 @@
 import re
 import math
+from typing import List, Dict, Any
 
 # Named-token patterns — matched before entropy to avoid duplicate findings.
 # Any line that matches here is CRITICAL; entropy scan is skipped for that line.
@@ -69,8 +70,8 @@ def _is_allowlisted(literal: str) -> bool:
     return any(p.match(literal) for p in _ALLOWLIST_RE)
 
 
-def analyze_entropy_and_secrets(code_data: str) -> list:
-    findings: list = []
+def analyze_entropy_and_secrets(code_data: str) -> List[Dict[str, Any]]:
+    findings: List[Dict[str, Any]] = []
     lines = code_data.splitlines()
 
     for idx, line in enumerate(lines, 1):
