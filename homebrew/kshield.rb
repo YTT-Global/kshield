@@ -17,10 +17,10 @@ class Kshield < Formula
   on_linux do
     if Hardware::CPU.arm?
       url "https://github.com/YTT-Global/kshield/releases/download/v#{version}/kshield-aarch64-unknown-linux-gnu.tar.gz"
-      sha256 "849c32d1b1d873b1bb182f54550bbc40400db46f15505b0c4bb34fa6475733d3"
+      sha256 "REPLACE_AFTER_LINUX_ARM64_BUILD"
     else
       url "https://github.com/YTT-Global/kshield/releases/download/v#{version}/kshield-x86_64-unknown-linux-gnu.tar.gz"
-      sha256 "7e4234745e19033709af9a175670dfd796e0e7cfbe6de0f6f9f8b3bdccabde85"
+      sha256 "REPLACE_AFTER_LINUX_X86_BUILD"
     end
   end
 

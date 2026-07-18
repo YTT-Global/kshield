@@ -57,15 +57,15 @@ jobs:
           cp "$BINARY" kshield
           tar -czf "$TARBALL" kshield
           rm kshield
-          sha256sum "$TARBALL" >> checksums.txt 2>/dev/null \
-            || shasum -a 256 "$TARBALL" >> checksums.txt
+          sha256sum "$TARBALL" >> checksums-${{ matrix.target }}.txt 2>/dev/null \
+            || shasum -a 256 "$TARBALL" >> checksums-${{ matrix.target }}.txt
 
       - uses: actions/upload-artifact@v4
         with:
           name: binary-${{ matrix.target }}
           path: |
             kshield-${{ matrix.target }}.tar.gz
-            checksums.txt
+            checksums-${{ matrix.target }}.txt
 
   # ── Package the Python backend ───────────────────────────────────────────────
   package-backend:
@@ -107,7 +107,7 @@ jobs:
 
       - name: Merge checksums
         run: |
-          cat dist/checksums.txt | sort -u > checksums.txt
+          cat dist/checksums.txt dist/checksums-*.txt | sort -u > checksums.txt
           cat checksums.txt
 
       - name: Update Homebrew formula checksums
