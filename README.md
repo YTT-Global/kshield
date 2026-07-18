@@ -1,12 +1,18 @@
-# KShield
+<div align="center">
+  <img src="assets/logo.svg" width="96" alt="KShield logo" />
 
-> The pre-commit security firewall for developers. Catches hardcoded secrets, broken access control, AI hallucinations, and supply-chain risks — entirely on your machine, before a single line reaches your remote.
+  # KShield
 
-[![Build](https://img.shields.io/github/actions/workflow/status/YTT-Global/kshield/kshield-ci.yml?label=CI&style=flat-square)](https://github.com/YTT-Global/kshield/actions)
-[![Release](https://img.shields.io/github/v/release/YTT-Global/kshield?style=flat-square)](https://github.com/YTT-Global/kshield/releases/latest)
-[![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/YTTGlobal.kshield-vscode?style=flat-square&label=VS%20Code%20Marketplace)](https://marketplace.visualstudio.com/items?itemName=YTTGlobal.kshield-vscode)
-[![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
-[![Stack](https://img.shields.io/badge/stack-Rust%20·%20FastAPI%20·%20React-red?style=flat-square)](#tech-stack)
+  **The pre-commit security firewall for developers**
+
+  Catches hardcoded secrets, broken access control, AI hallucinations, and supply-chain risks — entirely on your machine, before a single line reaches your remote.
+
+  [![Build](https://img.shields.io/github/actions/workflow/status/YTT-Global/kshield/kshield-ci.yml?label=CI&style=flat-square)](https://github.com/YTT-Global/kshield/actions)
+  [![Release](https://img.shields.io/github/v/release/YTT-Global/kshield?style=flat-square)](https://github.com/YTT-Global/kshield/releases/latest)
+  [![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/YTTGlobal.kshield-vscode?style=flat-square&label=VS%20Code%20Marketplace)](https://marketplace.visualstudio.com/items?itemName=YTTGlobal.kshield-vscode)
+  [![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
+  [![Stack](https://img.shields.io/badge/stack-Rust%20·%20FastAPI%20·%20React-red?style=flat-square)](#tech-stack)
+</div>
 
 ---
 
@@ -245,6 +251,7 @@ kshield/
 ├── homebrew/kshield.rb         # Homebrew formula
 ├── install.sh                  # curl | bash installer
 ├── pyproject.toml              # pip install kshield
+├── assets/logo.svg             # Brand mark, used in this README
 ├── LICENSE                     # MIT
 ├── CHANGELOG.md
 └── docs/
