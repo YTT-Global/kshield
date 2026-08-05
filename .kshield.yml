@@ -8,3 +8,8 @@ suppress:
     - "**/pnpm-lock.yaml"
     - "Cargo.lock"
     - "**/Cargo.lock"
+    # Test fixtures intentionally contain realistic-looking fake secrets/PATs
+    # to verify the entropy/pattern detectors actually catch them — real
+    # findings here are expected noise, not leaked credentials.
+    - "backend/tests/**"
+    - "**/backend/tests/**"

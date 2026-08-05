@@ -65,7 +65,7 @@ async def apply_patch(body: ApplyPatchRequest, db: AsyncSession = Depends(get_db
         raise HTTPException(status_code=404, detail="Scan record not found")
 
     # Re-generate the patch (we don't store the full patch in the DB)
-    from app.engine.remediation import construct_remediation_patch
+    from app.engine.ksword import construct_remediation_patch
 
     # Try to find the file relative to common repo roots
     filename = scan.filename
@@ -77,20 +77,17 @@ async def apply_patch(body: ApplyPatchRequest, db: AsyncSession = Depends(get_db
     file_path = next((p for p in candidates if p.exists()), None)
 
     if not file_path:
-        # Can't find file — return the patch diff for the client to apply manually
-        try:
-            content = ""
-            patch = construct_remediation_patch(filename, content, vuln.anomaly_type, vuln.line_number)
-        except Exception:
-            patch = {"explanation": "", "patch_diff": ""}
+        # Can't find the file on disk at all — no content to safely patch against.
         return {
             "status": "patch_only",
             "message": "File not found on disk — copy the patch and apply manually.",
-            "patch_diff": patch["patch_diff"],
+            "patch_diff": "",
         }
 
     content = file_path.read_text()
-    patch = construct_remediation_patch(str(file_path), content, vuln.anomaly_type, vuln.line_number)
+    patch = construct_remediation_patch(
+        str(file_path), content, vuln.anomaly_type, vuln.line_number, vuln.description
+    )
 
     if not patch["patch_diff"]:
         return {"status": "no_patch", "message": "No automated patch available for this finding."}

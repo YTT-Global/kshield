@@ -20,6 +20,12 @@ export interface ScanResult {
   anomalies: Anomaly[];
 }
 
+export interface SuppressedRule {
+  rule_type: string;
+  justification: string;
+  created_at: string;
+}
+
 export interface GlobalTelemetry {
   totalScans: number;
   cleanFiles: number;

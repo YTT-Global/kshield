@@ -30,9 +30,10 @@ def apply(findings: list[dict], filename: str, content: str, suppress: dict) -> 
     result = []
     for finding in findings:
         suppressed = (
-            file_suppressed
-            or finding.get("severity", "").upper() in blocked_severities
-            or finding.get("anomaly_type", "").lower() in blocked_rules
+            finding.get("suppressed", False)  # sticky — a prior pass (e.g. quiet_office)
+            or file_suppressed                # may already have suppressed this finding;
+            or finding.get("severity", "").upper() in blocked_severities  # never flip it
+            or finding.get("anomaly_type", "").lower() in blocked_rules   # back to False
             or finding.get("line_number", 0) in ignored_lines
         )
         result.append({**finding, "suppressed": suppressed})

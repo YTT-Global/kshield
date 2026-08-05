@@ -8,6 +8,7 @@ backend/**/__pycache__/
 backend/**/*.pyc
 backend/.env
 backend/*.egg-info/
+backend/tests/
 
 # ── Frontend ───────────────────────────────────────────────────────────────────
 frontend/node_modules/

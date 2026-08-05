@@ -9,7 +9,7 @@ from app.engine.entropy import analyze_entropy_and_secrets
 from app.engine.ast_rules import run_ast_structural_scan
 from app.engine.model import sequence_classifier_node
 from app.engine.sandbox import evaluate_dependency_hallucinations
-from app.engine.remediation import construct_remediation_patch
+from app.engine.ksword import construct_remediation_patch
 from app.engine.suppress import apply as apply_suppressions
 from app.models.scans import Scan
 from app.models.vulnerabilities import Vulnerability
@@ -80,7 +80,8 @@ async def process_code_pipeline_evaluation(payload: ScanRequest, db: AsyncSessio
                 payload.filename,
                 payload.content,
                 issue["anomaly_type"],
-                issue["line_number"]
+                issue["line_number"],
+                issue["description"],
             ) if not is_suppressed else {"explanation": "", "patch_diff": ""}
 
             embedding_matrix = sequence_classifier_node.generate_embedding_vector(issue["description"])

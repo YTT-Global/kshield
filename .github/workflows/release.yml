@@ -26,6 +26,8 @@ jobs:
           - target: aarch64-unknown-linux-gnu
             os: ubuntu-22.04
             use_cross: true
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
 
     steps:
       - uses: actions/checkout@v4
@@ -52,20 +54,30 @@ jobs:
       - name: Package binary
         shell: bash
         run: |
-          BINARY="cli/target/${{ matrix.target }}/release/kshield"
-          TARBALL="kshield-${{ matrix.target }}.tar.gz"
-          cp "$BINARY" kshield
-          tar -czf "$TARBALL" kshield
-          rm kshield
-          sha256sum "$TARBALL" >> checksums-${{ matrix.target }}.txt 2>/dev/null \
-            || shasum -a 256 "$TARBALL" >> checksums-${{ matrix.target }}.txt
+          if [[ "${{ matrix.target }}" == *windows* ]]; then
+            BINARY="cli/target/${{ matrix.target }}/release/kshield.exe"
+            ARCHIVE="kshield-${{ matrix.target }}.zip"
+            cp "$BINARY" kshield.exe
+            7z a "$ARCHIVE" kshield.exe
+            rm kshield.exe
+          else
+            BINARY="cli/target/${{ matrix.target }}/release/kshield"
+            ARCHIVE="kshield-${{ matrix.target }}.tar.gz"
+            cp "$BINARY" kshield
+            tar -czf "$ARCHIVE" kshield
+            rm kshield
+          fi
+          sha256sum "$ARCHIVE" >> checksums-${{ matrix.target }}.txt 2>/dev/null \
+            || shasum -a 256 "$ARCHIVE" >> checksums-${{ matrix.target }}.txt
 
       - uses: actions/upload-artifact@v4
         with:
           name: binary-${{ matrix.target }}
           path: |
             kshield-${{ matrix.target }}.tar.gz
+            kshield-${{ matrix.target }}.zip
             checksums-${{ matrix.target }}.txt
+          if-no-files-found: ignore
 
   # ── Package the Python backend ───────────────────────────────────────────────
   package-backend:
@@ -141,10 +153,12 @@ jobs:
             brew install ytt-global/tap/kshield
             ```
 
-            **npm:**
+            **npm (macOS / Linux / Windows):**
             ```bash
-            npx kshield@${{ github.ref_name }} init
+            npx @ytt-global/kshield@${{ github.ref_name }} init
             ```
+
+            **Windows (manual):** download `kshield-x86_64-pc-windows-msvc.zip` below, extract, and add it to your `PATH`. Not yet covered by an install script — the npm path above handles this automatically.
 
             **pip:**
             ```bash
@@ -165,6 +179,7 @@ jobs:
             See [CHANGELOG](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for what's new.
           files: |
             dist/*.tar.gz
+            dist/*.zip
             checksums.txt
             homebrew/kshield.rb
           draft: false
