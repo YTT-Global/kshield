@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Report a security vulnerability
+    url: mailto:accounts@ytt.global
+    about: Do not open a public issue for security vulnerabilities — email us directly instead. See SECURITY.md.

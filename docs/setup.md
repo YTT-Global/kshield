@@ -47,9 +47,9 @@ brew install ytt-global/tap/kshield
 
 ### npx (Node.js)
 ```bash
-npx kshield init
+npx @ytt-global/kshield init
 ```
-Downloads the platform binary on first run via the `kshield` npm package.
+Downloads the platform binary on first run via the `@ytt-global/kshield` npm package.
 
 ### pip (Python)
 ```bash
@@ -115,8 +115,44 @@ kshield stop              # Stop the background backend
 kshield status            # Check backend health and hook status
 kshield scan <file>       # Manually scan a single file
 kshield hook              # Run pre-commit scan (called by git hook)
+kshield agent <name>      # Repo-wide audit — every tracked file, in one pass
 kshield --version         # Print CLI version
 ```
+
+---
+
+## Repo-Wide Audit (`kshield agent`)
+
+`hook`/`scan` only see one file or your staged diff. `agent` reads every git-tracked file in the current repo and sends them all to `POST /api/v1/audit` in one request, so access-control checks can see the whole codebase — which routes exist, which guards are genuinely used elsewhere — instead of judging one file in isolation.
+
+```bash
+cd your-repo
+kshield agent your-repo-name
+```
+
+Exits `1` if any active CRITICAL or HIGH finding remains, same as `hook`. Each run is persisted (file/finding/severity counts) and can be listed later:
+
+```bash
+curl http://127.0.0.1:8000/api/v1/audit/runs
+```
+
+Dismiss a finding as a false positive and similar future findings (matched by normalized description, not exact text) are auto-suppressed on later runs:
+
+```bash
+curl -X POST http://127.0.0.1:8000/api/v1/audit/dismiss-finding \
+  -H "Content-Type: application/json" \
+  -d '{"description": "...", "anomaly_type": "Broken Access Control", "justification": "internal admin tool, not internet-facing"}'
+```
+
+### Auditing a whole GitHub org
+
+`org-audit.sh` at the repo root clones every non-archived repo in an org and runs `kshield agent <repo>` against each one:
+
+```bash
+./org-audit.sh your-github-org
+```
+
+Requires the `gh` CLI to be authenticated. Per-repo logs land in `~/audits/<date>/results/`; the final summary is read back from the local `audit_runs` table, ranked by CRITICAL/HIGH count.
 
 ---
 

@@ -5,6 +5,22 @@ import numpy as np
 # Test file patterns — skip classification to avoid noisy false positives in test suites
 _TEST_FILE_RE = re.compile(r"(^|/)test[_-]|[_-]test\.py$|/tests?/", re.I)
 
+# Prose files where a trailing "..." is normal English (trailing off, a list
+# continuation) rather than an incomplete code stub. Only the bare-ellipsis
+# pattern is prose-prone — every other indicator needs a specific suspicious
+# phrase that's unlikely to appear innocuously in documentation.
+_DOC_FILE_RE = re.compile(r"\.(md|mdx|rst|txt)$", re.I)
+_BARE_ELLIPSIS_PATTERN = r"\.\.\.$"
+
+# Real bug found auditing kshield's own repo (and a user's separate security-
+# scanner file, aiCodeAnalysis.js): a line that itself *defines* a detection
+# pattern — "password.*=.*['\"]password['\"]" sitting in a rules table like
+# this one — contains the same substrings its own rule looks for, and matches
+# itself. Genuine credential/stub code never contains raw regex metacharacters
+# like these; a line that does is almost certainly a pattern definition, not
+# a literal value, so skip matching against it entirely.
+_LOOKS_LIKE_PATTERN_DEFINITION_RE = re.compile(r"\.\*|\\s\b|\\d\b|\\w\b|\[\^|\[:=\]")
+
 # Indicators organised by category — all matched case-insensitively against individual lines.
 # Format: (pattern_string, severity, category_label)
 _INDICATORS: list[tuple[str, str, str]] = [
@@ -87,9 +103,14 @@ class LocalSequenceClassifier:
 
         anomalies = []
         lines = code_data.splitlines()
+        is_doc_file = bool(_DOC_FILE_RE.search(filename))
 
         for index, text_line in enumerate(lines, 1):
+            if _LOOKS_LIKE_PATTERN_DEFINITION_RE.search(text_line):
+                continue
             for compiled, raw_pattern, severity, label in _COMPILED:
+                if is_doc_file and raw_pattern == _BARE_ELLIPSIS_PATTERN:
+                    continue
                 if compiled.search(text_line):
                     anomalies.append({
                         "line_number": index,

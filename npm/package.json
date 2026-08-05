@@ -1,5 +1,8 @@
 {
-  "name": "kshield",
+  "name": "@ytt-global/kshield",
+  "publishConfig": {
+    "access": "public"
+  },
   "version": "1.1.0",
   "description": "Local-first AI code review firewall — catches secrets, broken access control, and AI hallucinations before they reach your main branch.",
   "keywords": ["security", "code-review", "pre-commit", "git-hooks", "secrets-detection"],

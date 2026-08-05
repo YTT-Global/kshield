@@ -8,7 +8,9 @@ _SQLITE_FALLBACK = os.getenv("SQLITE_FALLBACK", "false").lower() in ("true", "1"
 if _SQLITE_FALLBACK:
     _db_dir = Path.home() / ".kshield"
     _db_dir.mkdir(parents=True, exist_ok=True)
-    DATABASE_URL = f"sqlite+aiosqlite:///{_db_dir}/kshield.db"
+    # DATABASE_URL override lets tests point at an isolated DB (e.g. in-memory)
+    # instead of the real local install at ~/.kshield/kshield.db.
+    DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite+aiosqlite:///{_db_dir}/kshield.db")
 else:
     DATABASE_URL = os.getenv(
         "DATABASE_URL",
@@ -41,6 +43,7 @@ async def _sqlite_migrate(conn) -> None:
     """Apply additive schema changes to existing SQLite DBs that predate them."""
     migrations = [
         "ALTER TABLE vulnerabilities ADD COLUMN suppressed BOOLEAN NOT NULL DEFAULT FALSE",
+        "ALTER TABLE false_positives ADD COLUMN signature TEXT",
     ]
     for sql in migrations:
         try:
@@ -51,7 +54,7 @@ async def _sqlite_migrate(conn) -> None:
 
 async def init_db() -> None:
     if _SQLITE_FALLBACK:
-        from app.models import scans, vulnerabilities, false_positives, configurations  # noqa: F401
+        from app.models import scans, vulnerabilities, false_positives, configurations, audit_runs  # noqa: F401
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
             await _sqlite_migrate(conn)

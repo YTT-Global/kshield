@@ -7,6 +7,8 @@ from app.db.session import init_db, close_db
 from app.api.v1.scan import router as api_v1_router
 from app.api.v1.history import router as history_router
 from app.api.v1.actions import router as actions_router
+from app.api.v1.audit import router as audit_router
+from app.api.v1.patterns import router as patterns_router
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger("kshield")
@@ -42,6 +44,8 @@ app.add_middleware(
 app.include_router(api_v1_router, prefix="/api/v1")
 app.include_router(history_router, prefix="/api/v1")
 app.include_router(actions_router, prefix="/api/v1")
+app.include_router(audit_router, prefix="/api/v1")
+app.include_router(patterns_router, prefix="/api/v1")
 
 @app.get("/health", tags=["System"])
 async def health_check():

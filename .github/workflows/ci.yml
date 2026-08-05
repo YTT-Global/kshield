@@ -43,7 +43,8 @@ jobs:
           from app.engine.entropy import analyze_entropy_and_secrets
           from app.engine.ast_rules import run_ast_structural_scan
           from app.engine.model import sequence_classifier_node
-          from app.engine.remediation import construct_remediation_patch
+          from app.engine.ksword import construct_remediation_patch
+          from app.engine.orchestrator import run_audit
           print('All backend imports OK')
           "
         working-directory: backend
