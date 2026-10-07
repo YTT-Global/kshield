@@ -65,17 +65,75 @@ def _find_import_line(lines: list[str], token: str) -> int:
 # before extracting; string literals are preserved (a "//" inside a URL
 # string like "https://x" must survive). Not a full JS parser — good enough
 # for this regex-based extraction, not used anywhere line numbers matter.
-_JS_COMMENT_OR_STRING_RE = re.compile(
-    r"""(?P<comment>//[^\n]*|/\*.*?\*/)|(?P<string>"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`)""",
-    re.DOTALL,
-)
+#
+# This is a hand-rolled scanner rather than one regex: the regex form
+# (`/\*.*?\*/` plus quote-with-escapes alternations) is polynomial on hostile
+# input, because every unterminated "/*" or quote re-scans to the end of the
+# file. This repo scans untrusted code (org-audit.sh clones other people's
+# repos), so it has to stay linear. Same output as the regex it replaced.
+_JS_SPECIAL_RE = re.compile(r"""[/"'`]""")
+
+
+def _string_end(code: str, start: int) -> int:
+    """Index just past the string literal opening at `start`, or -1 if it is
+    never terminated. A backslash escapes the next character, newlines
+    included."""
+    quote = code[start]
+    i, n = start + 1, len(code)
+    while i < n:
+        c = code[i]
+        if c == "\\":
+            i += 2
+        elif c == quote:
+            return i + 1
+        else:
+            i += 1
+    return -1
 
 
 def _strip_js_comments(code: str) -> str:
-    def _replace(m: re.Match) -> str:
-        return " " if m.group("comment") is not None else m.group("string")
+    out: list[str] = []
+    i, n = 0, len(code)
+    # Once a "/*" or a given quote has no terminator, no later one can have
+    # one either (a later quote is only reachable as an escaped character
+    # inside the failed scan, which pairs up identically from there on), so
+    # remember that instead of re-scanning to the end of the file each time.
+    block_dead = False
+    dead_quotes: set[str] = set()
 
-    return _JS_COMMENT_OR_STRING_RE.sub(_replace, code)
+    while i < n:
+        m = _JS_SPECIAL_RE.search(code, i)
+        if m is None:
+            out.append(code[i:])
+            break
+        j = m.start()
+        out.append(code[i:j])
+        c = code[j]
+
+        if c == "/" and code.startswith("//", j):
+            eol = code.find("\n", j)
+            out.append(" ")
+            i = n if eol == -1 else eol
+            continue
+        if c == "/" and code.startswith("/*", j) and not block_dead:
+            end = code.find("*/", j + 2)
+            if end != -1:
+                out.append(" ")
+                i = end + 2
+                continue
+            block_dead = True
+        elif c != "/" and c not in dead_quotes:
+            end = _string_end(code, j)
+            if end != -1:
+                out.append(code[j:end])
+                i = end
+                continue
+            dead_quotes.add(c)
+
+        out.append(c)
+        i = j + 1
+
+    return "".join(out)
 
 
 async def _check_registry(url: str, package: str) -> bool:

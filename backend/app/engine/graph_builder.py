@@ -24,7 +24,13 @@ class RepoGraph:
 
 
 _ROUTE_METHODS = {"get", "post", "put", "delete", "patch", "options", "head"}
-_JS_IMPORT_RE = re.compile(r"""(?:import\s+.*?from\s+|require\()\s*['"]([^'"]+)['"]""")
+# The gap between `import` and `from` is bounded and can't contain quotes or
+# newlines: with an unbounded `.*?` right after `import\s+`, a long run of
+# spaces (or many "import " tokens on one minified line) made this polynomial
+# on hostile input. 1000 chars comfortably covers a real single-line import list.
+_JS_IMPORT_RE = re.compile(
+    r"""(?:\bimport\b[^'"\n]{0,1000}?\bfrom\s+|require\(\s*)['"]([^'"]+)['"]"""
+)
 
 
 def _decorator_method(node: ast.expr) -> str:
