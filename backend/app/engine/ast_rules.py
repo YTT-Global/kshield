@@ -1,16 +1,6 @@
 import ast
 
-# Paths that are intentionally public — skip authentication check
-_PUBLIC_PATHS: frozenset = frozenset([
-    "/", "/health", "/healthz", "/health-check", "/healthcheck",
-    "/ping", "/pong", "/ready", "/readiness", "/liveness", "/alive",
-    "/docs", "/redoc", "/openapi.json", "/openapi.yaml",
-    "/metrics", "/status", "/version", "/info",
-    "/favicon.ico", "/robots.txt", "/sitemap.xml",
-])
-
-# HTTP methods that mutate state — unauthenticated access is a harder violation
-_MUTATION_METHODS: frozenset = frozenset(["post", "put", "delete", "patch"])
+from app.engine.access_patterns import PUBLIC_PATHS as _PUBLIC_PATHS, MUTATION_METHODS as _MUTATION_METHODS
 
 
 def _route_path(decorator: ast.expr) -> str | None:

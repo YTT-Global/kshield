@@ -2,6 +2,8 @@
 
 Thank you for your interest in contributing. KShield is a local-first security tool — every contribution helps developers write safer code without giving up their privacy.
 
+By participating in this project, you're expected to uphold our [Code of Conduct](CODE_OF_CONDUCT.md). Found a security vulnerability instead of a regular bug? See [SECURITY.md](SECURITY.md) — please don't open a public issue for it.
+
 ---
 
 ## Before You Start
@@ -34,7 +36,7 @@ Thank you for your interest in contributing. KShield is a local-first security t
    - **Environment** (OS + arch, Python version, Rust version, Node version)
    - **Relevant logs** (`~/.kshield/backend.log`, browser console, cargo output)
 
-Security vulnerabilities should **not** be reported as public issues. Email `accounts@ytt.global` directly.
+Security vulnerabilities should **not** be reported as public issues — see [SECURITY.md](SECURITY.md) for how to report them responsibly.
 
 ---
 

@@ -30,6 +30,9 @@ ARCH="$(uname -m)"
 case "$OS" in
   Darwin) OS_LABEL="apple-darwin" ;;
   Linux)  OS_LABEL="unknown-linux-gnu" ;;
+  MINGW*|MSYS*|CYGWIN*)
+    error "Windows detected via $OS. This script targets macOS/Linux tar.gz archives — use one of these instead:\n\n    npx @ytt-global/kshield init\n\n  or download kshield-x86_64-pc-windows-msvc.zip directly:\n    https://github.com/$REPO/releases"
+    ;;
   *)      error "Unsupported OS: $OS. Build from source: https://github.com/$REPO" ;;
 esac
 

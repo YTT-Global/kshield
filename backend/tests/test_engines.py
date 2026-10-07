@@ -24,38 +24,41 @@ class TestEntropy:
     # ── TRUE POSITIVES ──────────────────────────────────────────────────────
 
     def test_github_pat_detected(self):
-        code = "token = 'ghp_abcdefghijklmnopqrstuvwxyz123456789012'"
+        code = "token = 'ghp_abcdefghijklmnopqrstuvwxyz123456789012'"  # kshield: ignore
         r = analyze_entropy_and_secrets(code)
         assert any(f["anomaly_type"] == "Hardcoded Secret" for f in r)
         assert any(f["severity"] == "CRITICAL" for f in r)
 
     def test_github_fine_grained_pat_detected(self):
-        code = "tok = 'github_pat_" + "A" * 82 + "'"
+        varied = "aB3xK9mQ2wZ7pL5vN8rT1yU4iO6sD0fH" * 3
+        code = "tok = 'github_pat_" + varied[:82] + "'"
         r = analyze_entropy_and_secrets(code)
         assert any(f["anomaly_type"] == "Hardcoded Secret" for f in r)
 
     def test_aws_key_detected(self):
-        code = "key = 'AKIAIOSFODNN7EXAMPLE'"
+        code = "key = 'AKIAIOSFODNN7EXAMPLE'"  # kshield: ignore
         r = analyze_entropy_and_secrets(code)
         assert any(f["anomaly_type"] == "Hardcoded Secret" for f in r)
 
     def test_openai_key_detected(self):
-        code = "key = 'TEST_OPENAI_KEY_XYZ_123456789'"
+        # Fake keys are assembled at runtime so no full key-shaped literal sits in
+        # the source (GitHub push protection rejects those, even obvious fakes).
+        code = "key = '" + "sk-" + "ABCDEFGHIJKLMNOPQRSTT3BlbkFJUVWXYZ0123456789abcd" + "'"
         r = analyze_entropy_and_secrets(code)
         assert any(f["anomaly_type"] == "Hardcoded Secret" for f in r)
 
     def test_stripe_live_key_detected(self):
-        code = "STRIPE_KEY = 'TEST_STRIPE_KEY_XYZ_123456789'"
+        code = "STRIPE_KEY = '" + "sk_live_" + "ABCDEFGHIJKLMNOPQRSTUVWX" + "'"
         r = analyze_entropy_and_secrets(code)
         assert any(f["anomaly_type"] == "Hardcoded Secret" for f in r)
 
     def test_slack_bot_token_detected(self):
-        code = "slack = 'TEST_SLACK_TOKEN_XYZ_123456789'"
+        code = "slack = '" + "xoxb-" + "12345678901-98765432109-ABCDEFGHIJKLMNOPQRSTUVWX" + "'"
         r = analyze_entropy_and_secrets(code)
         assert any(f["anomaly_type"] == "Hardcoded Secret" for f in r)
 
     def test_npm_token_detected(self):
-        code = "NPM_TOKEN = 'npm_abcdefghijklmnopqrstuvwxyz1234567890'"
+        code = "NPM_TOKEN = 'npm_abcdefghijklmnopqrstuvwxyz1234567890'"  # kshield: ignore
         r = analyze_entropy_and_secrets(code)
         assert any(f["anomaly_type"] == "Hardcoded Secret" for f in r)
 
@@ -94,9 +97,24 @@ class TestEntropy:
 
     def test_no_duplicate_per_line(self):
         # A line that matches a named pattern should produce exactly 1 finding
-        code = "x = 'ghp_abcdefghijklmnopqrstuvwxyz123456789012'"
+        code = "x = 'ghp_abcdefghijklmnopqrstuvwxyz123456789012'"  # kshield: ignore
         r = analyze_entropy_and_secrets(code)
         assert len([f for f in r if f["line_number"] == 1]) == 1
+
+    def test_template_placeholder_value_not_flagged(self):
+        # Real false positive found in the synapse-console pilot: a
+        # .dev.vars.example file with "sk_test_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+        # matches the named-pattern shape but has near-zero real entropy.
+        code = "CLERK_SECRET_KEY=sk_test_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+        r = analyze_entropy_and_secrets(code)
+        assert r == []
+
+    def test_real_looking_key_with_repeated_prefix_still_flagged(self):
+        # Confirms the fix above doesn't just suppress every sk_test_ match —
+        # a plausible, varied-character key still gets caught.
+        code = "STRIPE_KEY = '" + "sk_test_" + "Q7mK2vXpL9wNc4tY6bAsD1fG" + "'"
+        r = analyze_entropy_and_secrets(code)
+        assert any(f["anomaly_type"] == "Hardcoded Secret" for f in r)
 
 
 # ════════════════════════════ ast_rules.py ══════════════════════════════════
@@ -241,7 +259,24 @@ class TestModel:
         r = self._run("# auth bypass for testing — disable auth")
         assert r
 
+    def test_bare_ellipsis_still_detected_in_code(self):
+        r = self._run("def handler():\n    ...", "app.py")
+        assert r
+
     # ── FALSE POSITIVE SUPPRESSION ──────────────────────────────────────────
+
+    def test_bare_ellipsis_not_flagged_in_markdown(self):
+        # Real false positive found in the ytt-payments pilot: a trailing
+        # "..." in prose (trailing off, list continuation) isn't an
+        # incomplete code stub the way it would be in a .py/.ts file.
+        r = self._run("The payment flow continues from here...", "docs/going-live.md")
+        assert r == []
+
+    def test_other_patterns_still_fire_in_markdown(self):
+        # Confirms the fix is scoped to the ellipsis pattern only — a
+        # genuinely suspicious phrase in docs should still be caught.
+        r = self._run("password = 'password'  # just for the demo", "docs/setup.md")
+        assert r
 
     def test_test_file_skipped(self):
         # Nothing should fire inside a test file
@@ -257,6 +292,22 @@ class TestModel:
         r = self._run("password = 'fake_password'  # TODO: verify with production")
         lines = [f["line_number"] for f in r]
         assert lines.count(1) == 1
+
+    def test_own_pattern_definition_not_self_flagged(self):
+        # Real bug found auditing kshield's own repo: model.py's _INDICATORS
+        # table contains lines like ("password.*=.*['\"]password['\"]", ...)
+        # which the "Credential stub" rule then matches against itself,
+        # since the regex source text literally contains "password...password".
+        # The same shape showed up in a user's own security-scanner file
+        # (a JS regex literal for detecting hardcoded secrets).
+        line = '    ("password.*=.*[\'"]password[\'"]", "HIGH", "Credential stub"),'
+        r = self._run(line)
+        assert r == []
+
+    def test_js_regex_literal_pattern_definition_not_self_flagged(self):
+        line = 'hardcodedSecrets: /(password|secret|key|token)\\s*[:=]\\s*["`\'][^"`\']+["`\']/gi,'
+        r = self._run(line, "aiCodeAnalysis.js")
+        assert r == []
 
     # ── Embedding ────────────────────────────────────────────────────────────
 
@@ -316,6 +367,34 @@ class TestSandboxOffline:
         assert r == []
 
     @pytest.mark.asyncio
+    async def test_import_name_registry_name_mismatch_not_flagged(self, monkeypatch):
+        # Real bug found in the Project-TEC pilot: `import cv2` is a real,
+        # legitimate package (published on PyPI as "opencv-python"), but
+        # checking the literal import name against PyPI always 404s.
+        import app.engine.sandbox as sb
+        checked_urls = []
+
+        async def fake_check(url, package):
+            checked_urls.append(url)
+            return "opencv-python" in url  # only the real registry name resolves
+
+        monkeypatch.setattr(sb, "_check_registry", fake_check)
+        from app.engine.sandbox import evaluate_dependency_hallucinations
+        r = await evaluate_dependency_hallucinations("import cv2\n", "app.py")
+        assert r == []
+        assert any("opencv-python" in u for u in checked_urls)
+
+    @pytest.mark.asyncio
+    async def test_import_name_registry_name_mismatch_still_uses_import_name_in_cache(self, mock_not_found):
+        # registry_cache (shared across files in a repo-wide audit) must be
+        # keyed by the import token seen in source, not the aliased registry
+        # name, so other files importing "cv2" hit the same cache entry.
+        from app.engine.sandbox import evaluate_dependency_hallucinations
+        cache: dict = {}
+        await evaluate_dependency_hallucinations("import cv2\n", "app.py", registry_cache=cache)
+        assert "cv2" in cache
+
+    @pytest.mark.asyncio
     async def test_npm_hallucinated_package(self, mock_not_found):
         from app.engine.sandbox import evaluate_dependency_hallucinations
         code = "import { foo } from 'totally-fake-npm-pkg-xyz';\n"
@@ -328,6 +407,47 @@ class TestSandboxOffline:
         code = "import { helper } from './utils';\n"
         r = await evaluate_dependency_hallucinations(code, "app.ts")
         assert r == []
+
+    @pytest.mark.asyncio
+    async def test_ts_path_alias_not_checked(self, mock_not_found):
+        # Real bug found in the synapse-console pilot: "@/hooks" is a Vite/
+        # Next.js path alias, not a scoped npm package.
+        from app.engine.sandbox import evaluate_dependency_hallucinations
+        code = "import { useAuth } from '@/hooks/useAuth';\n"
+        r = await evaluate_dependency_hallucinations(code, "app.tsx")
+        assert r == []
+
+    @pytest.mark.asyncio
+    async def test_jsdoc_comment_prose_not_treated_as_import(self, mock_not_found):
+        # Real bug found in the ytt-chrome-extensions pilot: a JSDoc comment
+        # like "The response type from 'proxy.settings.get'" contains the
+        # word "from" followed by a quoted string, which the bare "from"
+        # alternative in the import regex mistook for an ES import statement.
+        from app.engine.sandbox import evaluate_dependency_hallucinations
+        code = (
+            "/**\n"
+            " * The response type from 'proxy.settings.get'\n"
+            " * @typedef {{value: ProxyConfig}} ProxySettingsGetResult\n"
+            " */\n"
+            "import { helper } from './utils';\n"
+        )
+        r = await evaluate_dependency_hallucinations(code, "app.ts")
+        assert r == []
+
+    @pytest.mark.asyncio
+    async def test_url_inside_string_survives_comment_stripping(self, mock_not_found):
+        # Comment-stripping must not eat the "//" inside a URL string literal.
+        from app.engine.sandbox import evaluate_dependency_hallucinations
+        code = "const base = 'https://example.com/api';\nimport { z } from 'totally-fake-npm-pkg-xyz';\n"
+        r = await evaluate_dependency_hallucinations(code, "app.ts")
+        assert any(f["anomaly_type"] == "Dependency Hallucination" for f in r)
+
+    @pytest.mark.asyncio
+    async def test_real_import_after_block_comment_still_detected(self, mock_not_found):
+        from app.engine.sandbox import evaluate_dependency_hallucinations
+        code = "/* header comment\n   spanning lines */\nimport { z } from 'totally-fake-npm-pkg-xyz';\n"
+        r = await evaluate_dependency_hallucinations(code, "app.ts")
+        assert any(f["anomaly_type"] == "Dependency Hallucination" for f in r)
 
     @pytest.mark.asyncio
     async def test_go_stdlib_not_checked(self, mock_not_found):

@@ -1,15 +1,22 @@
-import React, { useState } from 'react';
-import { ShieldCog, Plus, Server, ListChecks, Ban } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { ShieldCog, Server, ListChecks, Ban } from 'lucide-react';
+import { api } from '../api/client';
+import type { SuppressedRule } from '../types/scan';
 
-interface RuleConfig {
-// ... (interface and SEVERITY remain unchanged)
-
-  id: string;
-  label: string;
-  description: string;
-  enabled: boolean;
-  severity: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
-}
+// The actual detection rules the engine supports — matches anomaly_type
+// exactly as returned by the backend. There is no dynamic/custom rule
+// system; the previous "Add New Rule" form implied a capability that never
+// existed on the backend, so it's gone rather than kept as decoration.
+const RULE_TYPES: { type: string; description: string; severity: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' }[] = [
+  { type: 'Hardcoded Secret',            description: 'Named token signatures — GitHub, AWS, Stripe, and 25+ more.',          severity: 'CRITICAL' },
+  { type: 'High Entropy Credential',     description: 'Shannon-entropy fallback for secrets with no named pattern.',           severity: 'HIGH' },
+  { type: 'Broken Access Control',       description: 'FastAPI routes with no authentication guard.',                          severity: 'HIGH' },
+  { type: 'AI Structural Hallucination', description: 'Placeholder stubs, hallucinated imports, AI generation artifacts.',     severity: 'MEDIUM' },
+  { type: 'Dependency Hallucination',    description: "Imports that don't exist on PyPI, npm, the Go proxy, or RubyGems.",     severity: 'CRITICAL' },
+  { type: 'Possible Typosquat',          description: 'Undeclared imports very close to a well-known package name.',          severity: 'HIGH' },
+  { type: 'Undeclared Dependency',       description: 'Imports missing from requirements.txt / package.json.',                severity: 'LOW' },
+  { type: 'Syntax Violation',            description: 'Files that fail to parse — often truncated AI-generated code.',        severity: 'MEDIUM' },
+];
 
 const SEVERITY: Record<string, string> = {
   CRITICAL: 'bg-red-100 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-400 dark:border-red-900',
@@ -18,37 +25,46 @@ const SEVERITY: Record<string, string> = {
   LOW:      'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-400 dark:border-blue-900',
 };
 
-const INITIAL_RULES: RuleConfig[] = [];
-
 export const Settings: React.FC = () => {
   const [apiUrl, setApiUrl] = useState('');
   const [ignorePatterns, setIgnorePatterns] = useState('');
-  const [rules, setRules] = useState<RuleConfig[]>(INITIAL_RULES);
   const [saved, setSaved] = useState(false);
 
-  // New rule form state
-  const [newRuleLabel, setNewRuleLabel] = useState('');
-  const [newRuleDescription, setNewRuleDescription] = useState('');
-  const [newRuleSeverity, setNewRuleSeverity] = useState<'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW'>('MEDIUM');
+  const [suppressedRules, setSuppressedRules] = useState<SuppressedRule[]>([]);
+  const [suppressedLoading, setSuppressedLoading] = useState(true);
+  const [suppressedError, setSuppressedError] = useState(false);
+  const [togglingType, setTogglingType] = useState<string | null>(null);
 
-  const toggleRule = (id: string) =>
-    setRules(prev => prev.map(r => r.id === id ? { ...r, enabled: !r.enabled } : r));
+  const loadSuppressedRules = () => {
+    setSuppressedLoading(true);
+    setSuppressedError(false);
+    api.suppressedRules()
+      .then(setSuppressedRules)
+      .catch(() => setSuppressedError(true))
+      .finally(() => setSuppressedLoading(false));
+  };
 
-  const handleAddRule = () => {
-    if (!newRuleLabel.trim()) return;
-    
-    const rule: RuleConfig = {
-      id: crypto.randomUUID(),
-      label: newRuleLabel.trim(),
-      description: newRuleDescription.trim() || 'User-defined detection rule.',
-      enabled: true,
-      severity: newRuleSeverity,
-    };
-    
-    setRules(prev => [...prev, rule]);
-    setNewRuleLabel('');
-    setNewRuleDescription('');
-    setNewRuleSeverity('MEDIUM');
+  useEffect(() => {
+    loadSuppressedRules();
+  }, []);
+
+  const isRuleEnabled = (type: string) => !suppressedRules.some(r => r.rule_type === type);
+
+  const handleToggleRule = async (type: string) => {
+    setTogglingType(type);
+    try {
+      if (isRuleEnabled(type)) {
+        await api.suppress(type);
+        setSuppressedRules(prev => [...prev, { rule_type: type, justification: 'Suppressed via dashboard', created_at: new Date().toISOString() }]);
+      } else {
+        await api.unsuppress(type);
+        setSuppressedRules(prev => prev.filter(r => r.rule_type !== type));
+      }
+    } catch {
+      setSuppressedError(true);
+    } finally {
+      setTogglingType(null);
+    }
   };
 
   const handleSave = () => {
@@ -56,7 +72,7 @@ export const Settings: React.FC = () => {
     setTimeout(() => setSaved(false), 2500);
   };
 
-  const activeCount = rules.filter(r => r.enabled).length;
+  const activeCount = RULE_TYPES.length - suppressedRules.length;
 
   return (
     <div className="space-y-6 lg:space-y-7">
@@ -102,96 +118,70 @@ export const Settings: React.FC = () => {
         </div>
       </section>
 
-      {/* Detection rules */}
+      {/* Detection rules — real, API-backed. A rule toggled off here calls the
+          same global suppress mechanism as the dashboard's "Suppress Rule"
+          button (POST/DELETE /api/v1/suppress), so state matches everywhere. */}
       <section className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm dark:shadow-none">
         <div className="px-4 sm:px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
             <ListChecks size={18} className="text-slate-500 dark:text-slate-400 flex-shrink-0" />
             <div className="min-w-0">
               <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200">Detection Rules</h3>
-              <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5 hidden sm:block">Toggle which vulnerability types the engine flags on each scan.</p>
+              <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5 hidden sm:block">Toggle which vulnerability types the engine flags — applies globally, on every future scan.</p>
             </div>
           </div>
-          <span className="text-[11px] font-mono bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-2.5 py-1 rounded-full border border-slate-200 dark:border-slate-700 flex-shrink-0">
-            {activeCount}/{rules.length} active
-          </span>
+          {!suppressedLoading && !suppressedError && (
+            <span className="text-[11px] font-mono bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-2.5 py-1 rounded-full border border-slate-200 dark:border-slate-700 flex-shrink-0">
+              {activeCount}/{RULE_TYPES.length} active
+            </span>
+          )}
         </div>
 
-        {/* Add New Rule Form */}
-        <div className="p-4 sm:p-5 bg-slate-50/50 dark:bg-slate-800/30 border-b border-slate-100 dark:border-slate-800">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 block ml-1">Rule Label</label>
-              <input
-                type="text"
-                value={newRuleLabel}
-                onChange={e => setNewRuleLabel(e.target.value)}
-                placeholder="e.g. Custom Secret"
-                className="w-full rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-red-500/20"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 block ml-1">Description</label>
-              <input
-                type="text"
-                value={newRuleDescription}
-                onChange={e => setNewRuleDescription(e.target.value)}
-                placeholder="What this rule detects..."
-                className="w-full rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-red-500/20"
-              />
-            </div>
-            <div className="flex gap-2 items-end">
-              <div className="flex-1 space-y-1.5">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 block ml-1">Severity</label>
-                <select
-                  value={newRuleSeverity}
-                  onChange={e => setNewRuleSeverity(e.target.value as any)}
-                  className="w-full rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-red-500/20"
-                >
-                  <option value="CRITICAL">CRITICAL</option>
-                  <option value="HIGH">HIGH</option>
-                  <option value="MEDIUM">MEDIUM</option>
-                  <option value="LOW">LOW</option>
-                </select>
-              </div>
-              <button
-                onClick={handleAddRule}
-                disabled={!newRuleLabel.trim()}
-                className="h-[38px] px-4 rounded-lg bg-red-600 hover:bg-red-700 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <Plus size={18} />
-              </button>
-            </div>
+        {suppressedLoading ? (
+          <p className="px-4 sm:px-5 py-6 text-sm text-slate-400 dark:text-slate-500">Loading…</p>
+        ) : suppressedError ? (
+          <div className="px-4 sm:px-5 py-6 flex items-center justify-between gap-3">
+            <p className="text-sm text-red-500 dark:text-red-400">Could not reach the backend to load rule state.</p>
+            <button
+              onClick={loadSuppressedRules}
+              className="text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors flex-shrink-0"
+            >
+              Retry
+            </button>
           </div>
-        </div>
-
-        <div className="divide-y divide-slate-100 dark:divide-slate-800">
-          {rules.map(rule => (
-            <div key={rule.id} className="flex items-center gap-3 sm:gap-4 px-4 sm:px-5 py-4 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
-              <button
-                role="switch"
-                aria-checked={rule.enabled}
-                onClick={() => toggleRule(rule.id)}
-                className={`relative flex-shrink-0 inline-flex h-5 w-9 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200
-                  focus:outline-none focus:ring-2 focus:ring-red-500/30
-                  ${rule.enabled ? 'bg-red-600' : 'bg-slate-200 dark:bg-slate-700'}`}
-              >
-                <span className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow transition-transform duration-200 ${rule.enabled ? 'translate-x-4' : 'translate-x-0'}`} />
-              </button>
-              <div className="flex-1 min-w-0">
-                <p className={`text-sm font-medium ${rule.enabled ? 'text-slate-900 dark:text-slate-100' : 'text-slate-400 dark:text-slate-500'}`}>
-                  {rule.label}
-                </p>
-                <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5 truncate hidden sm:block">{rule.description}</p>
-              </div>
-              <span className={`flex-shrink-0 text-[10px] font-bold font-mono px-1.5 sm:px-2 py-0.5 rounded-md border uppercase ${SEVERITY[rule.severity]}`}>
-                {/* Show abbreviated severity on mobile */}
-                <span className="sm:hidden">{rule.severity[0]}</span>
-                <span className="hidden sm:inline">{rule.severity}</span>
-              </span>
-            </div>
-          ))}
-        </div>
+        ) : (
+          <div className="divide-y divide-slate-100 dark:divide-slate-800">
+            {RULE_TYPES.map(rule => {
+              const enabled = isRuleEnabled(rule.type);
+              return (
+                <div key={rule.type} className="flex items-center gap-3 sm:gap-4 px-4 sm:px-5 py-4 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+                  <button
+                    role="switch"
+                    aria-checked={enabled}
+                    aria-label={`${enabled ? 'Disable' : 'Enable'} ${rule.type}`}
+                    disabled={togglingType === rule.type}
+                    onClick={() => handleToggleRule(rule.type)}
+                    className={`relative flex-shrink-0 inline-flex h-5 w-9 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200
+                      focus:outline-none focus:ring-2 focus:ring-red-500/30 disabled:opacity-50 disabled:cursor-not-allowed
+                      ${enabled ? 'bg-red-600' : 'bg-slate-200 dark:bg-slate-700'}`}
+                  >
+                    <span className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow transition-transform duration-200 ${enabled ? 'translate-x-4' : 'translate-x-0'}`} />
+                  </button>
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-sm font-medium ${enabled ? 'text-slate-900 dark:text-slate-100' : 'text-slate-400 dark:text-slate-500'}`}>
+                      {rule.type}
+                    </p>
+                    <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5 truncate hidden sm:block">{rule.description}</p>
+                  </div>
+                  <span className={`flex-shrink-0 text-[10px] font-bold font-mono px-1.5 sm:px-2 py-0.5 rounded-md border uppercase ${SEVERITY[rule.severity]}`}>
+                    <span className="sm:hidden">{rule.severity[0]}</span>
+                    <span className="hidden sm:inline">{rule.severity}</span>
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </section>
 
       {/* Ignore patterns */}

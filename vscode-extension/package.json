@@ -18,7 +18,7 @@
   "bugs": {
     "url": "https://github.com/YTT-Global/kshield/issues"
   },
-  "homepage": "https://github.com/YTT-Global/kshield/tree/main/vscode-extension#readme",
+  "homepage": "https://github.com/YTT-Global/kshield/tree/master/vscode-extension#readme",
   "engines": {
     "vscode": "^1.85.0"
   },

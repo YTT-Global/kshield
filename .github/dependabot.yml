@@ -1,0 +1,55 @@
+version: 2
+updates:
+  # Rust CLI
+  - package-ecosystem: "cargo"
+    directory: "/cli"
+    schedule:
+      interval: "weekly"
+    labels: ["dependencies", "cli"]
+    groups:
+      cargo-minor-patch:
+        update-types: ["minor", "patch"]
+
+  # Python backend
+  - package-ecosystem: "pip"
+    directory: "/backend"
+    schedule:
+      interval: "weekly"
+    labels: ["dependencies", "backend"]
+    groups:
+      pip-minor-patch:
+        update-types: ["minor", "patch"]
+
+  # React dashboard
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+    labels: ["dependencies", "frontend"]
+    groups:
+      npm-minor-patch:
+        update-types: ["minor", "patch"]
+
+  # VS Code extension
+  - package-ecosystem: "npm"
+    directory: "/vscode-extension"
+    schedule:
+      interval: "weekly"
+    labels: ["dependencies", "vscode-extension"]
+    groups:
+      npm-minor-patch:
+        update-types: ["minor", "patch"]
+
+  # npx wrapper package
+  - package-ecosystem: "npm"
+    directory: "/npm"
+    schedule:
+      interval: "weekly"
+    labels: ["dependencies", "npm-wrapper"]
+
+  # GitHub Actions workflow versions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    labels: ["dependencies", "ci"]

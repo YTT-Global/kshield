@@ -66,6 +66,7 @@ const CLI_COMMANDS = [
   { cmd: 'kshield status',      desc: 'Check whether the backend and hook are running' },
   { cmd: 'kshield scan <file>', desc: 'Manually scan a single file without committing' },
   { cmd: 'kshield hook',        desc: 'Run a pre-commit scan (called automatically by the git hook)' },
+  { cmd: 'kshield agent <name>', desc: 'Repo-wide audit — scans every git-tracked file at once (not just the diff) with cross-file access-control checks and verified fixes' },
 ];
 
 const DETECTION_RULES = [
@@ -93,13 +94,25 @@ const DETECTION_RULES = [
     description: 'Verifies every import against the official registry for Python (PyPI), JavaScript/TypeScript (npm), Go (Go module proxy), and Ruby (RubyGems). Standard library modules are always skipped. Network timeouts fail open — the commit is not blocked.',
     examples: ['import non_existent_package', 'importing from a fake_ai_sdk package'],
   },
+  {
+    title: 'Possible Typosquat',
+    severity: 'CRITICAL',
+    description: 'Imports not declared in your dependency files whose name is within a small edit distance of a well-known package. Edit distance 1 is CRITICAL; distance 2 is HIGH. Reported by repo-wide audits (kshield agent).',
+    examples: ['import reqeusts (vs requests)', 'import nunpy (vs numpy)'],
+  },
+  {
+    title: 'Undeclared Dependency',
+    severity: 'LOW',
+    description: 'Imports that do not appear in requirements.txt, pyproject.toml, or package.json. Reported by repo-wide audits (kshield agent).',
+    examples: ['import yaml with no PyYAML in requirements.txt'],
+  },
 ];
 
 const INSTALL_METHODS = [
   {
     label: 'curl (recommended)',
-    platform: 'macOS · Linux',
-    code: 'curl -fsSL https://raw.githubusercontent.com/YTT-Global/kshield/main/install.sh | bash',
+    platform: 'macOS · Linux (Windows: use npm or the release .zip)',
+    code: 'curl -fsSL https://raw.githubusercontent.com/YTT-Global/kshield/master/install.sh | bash',
   },
   {
     label: 'Homebrew',
@@ -108,8 +121,8 @@ const INSTALL_METHODS = [
   },
   {
     label: 'npm / npx',
-    platform: 'JavaScript developers',
-    code: 'npx kshield init',
+    platform: 'macOS · Linux · Windows (beta — not yet verified on real hardware)',
+    code: 'npx @ytt-global/kshield init',
   },
   {
     label: 'pip',
@@ -117,6 +130,11 @@ const INSTALL_METHODS = [
     code: `pip install kshield
 kshield-backend &   # start the backend
 kshield init        # install the hook`,
+  },
+  {
+    label: 'VS Code extension',
+    platform: 'Inline warnings as you type',
+    code: 'code --install-extension YTTGlobal.kshield-vscode',
   },
 ];
 
@@ -133,6 +151,7 @@ const TOC_API = [
   { id: 'api-health',    label: 'GET /health' },
   { id: 'api-scan',      label: 'POST /api/v1/scan' },
   { id: 'api-response',  label: 'Response Schema' },
+  { id: 'api-audit',     label: 'POST /api/v1/audit' },
   { id: 'api-errors',    label: 'Error Codes' },
 ];
 
@@ -306,7 +325,7 @@ To skip (not recommended): git commit --no-verify`} />
 
               {/* Install */}
               <section id="install" className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-sm dark:shadow-none scroll-mt-4">
-                <SectionHeader icon={Package} title="Install" subtitle="Four paths — same binary, same experience" />
+                <SectionHeader icon={Package} title="Install" subtitle="Five paths — same binary, same experience" />
 
                 <div className="space-y-4">
                   {INSTALL_METHODS.map(({ label, platform, code }) => (
@@ -349,7 +368,7 @@ To skip (not recommended): git commit --no-verify`} />
 
               {/* What it detects */}
               <section id="detection" className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-sm dark:shadow-none scroll-mt-4">
-                <SectionHeader icon={ShieldCheck} title="What It Detects" subtitle="Four scan engines run on every staged file" />
+                <SectionHeader icon={ShieldCheck} title="What It Detects" subtitle="Run on every staged file and every repo-wide audit" />
 
                 <div className="space-y-5">
                   {DETECTION_RULES.map(({ title, severity, description, examples }) => (
@@ -462,7 +481,7 @@ To skip (not recommended): git commit --no-verify`} />
                 </div>
 
                 <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-5">
-                  Runs all four scan engines (entropy, AST, ML classifier, dependency hallucination) on the provided file content and returns a list of findings with remediation patches.
+                  Runs every scan engine (entropy, AST, regex pattern classifier, dependency hallucination) on the provided file content and returns a list of findings with remediation patches.
                 </p>
 
                 <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-3">Request Body</p>
@@ -544,6 +563,52 @@ Content-Type: application/json
     }
   ]
 }`} />
+              </section>
+
+              {/* POST /api/v1/audit */}
+              <section id="api-audit" className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-sm dark:shadow-none scroll-mt-4">
+                <div className="flex items-center gap-3 mb-5">
+                  <MethodBadge method="POST" />
+                  <code className="text-sm font-mono font-semibold text-slate-900 dark:text-white">/api/v1/audit</code>
+                  <span className="text-xs text-slate-400 dark:text-slate-500">— Repo-wide audit</span>
+                </div>
+
+                <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-5">
+                  Audits a whole repository in one pass. Builds an import / symbol / route graph first, then runs graph-aware access-control, typosquat and undeclared-dependency checks plus the per-file engines. Every finding carries a remediation that was applied in memory and re-checked before being returned. This is the endpoint behind <code className="font-mono bg-slate-100 dark:bg-slate-800 px-1 rounded text-xs">kshield agent</code>.
+                </p>
+
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-3">Request Body</p>
+                <div className="overflow-x-auto mb-5">
+                  <table className="w-full text-sm border border-slate-100 dark:border-slate-800 rounded-lg overflow-hidden">
+                    <thead>
+                      <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800">
+                        <th className="text-left px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500 w-[120px]">Field</th>
+                        <th className="text-left px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500 w-[100px]">Type</th>
+                        <th className="text-left px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">Description</th>
+                      </tr>
+                    </thead>
+                    <tbody className="px-4">
+                      <FieldRow name="name"     type="string"   required desc="Label for this audit run (usually the repo name). Shown in the run history." />
+                      <FieldRow name="files"    type="object[]" required desc="Every file to audit, each as { filename, content }. Send the raw source." />
+                      <FieldRow name="suppress" type="object"            desc="Optional suppression config (same shape as in /api/v1/scan), merged with globally suppressed rules." />
+                    </tbody>
+                  </table>
+                </div>
+
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-2">Response — 200 OK (abridged)</p>
+                <CodeBlock language="json" code={`{
+  "name": "my-repo",
+  "file_count": 145,
+  "route_count": 13,
+  "findings_count": 12,
+  "quieted_count": 0,
+  "findings": [ { "anomaly_type": "Broken Access Control", "severity": "HIGH", "filename": "...", "line_number": 34, "remediation": { "explanation": "...", "patch_diff": "..." } } ],
+  "routes": [ { "path": "/runs", "method": "GET", "handler": "list_audit_runs", "filename": "...", "line": 99 } ]
+}`} />
+
+                <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mt-4">
+                  Related endpoints: <code className="font-mono bg-slate-100 dark:bg-slate-800 px-1 rounded text-xs">GET /api/v1/audit/runs</code> lists past runs ranked by severity, and <code className="font-mono bg-slate-100 dark:bg-slate-800 px-1 rounded text-xs">POST /api/v1/audit/dismiss-finding</code> marks a finding as a false positive so similar findings are quieted on future runs.
+                </p>
               </section>
 
               {/* Error Codes */}

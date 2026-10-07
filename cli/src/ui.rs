@@ -106,6 +106,86 @@ pub fn print_clean(file_count: usize) {
     println!();
 }
 
+pub fn print_agent_header(name: &str, file_count: usize) {
+    println!();
+    println!("{BOLD}{CYAN}  KShield  ·  Agent  ·  {name}  {RESET}");
+    println!(
+        "{DIM}  Building repo graph from {file_count} tracked file{}...{RESET}",
+        if file_count == 1 { "" } else { "s" }
+    );
+    println!();
+}
+
+pub fn print_audit_summary(result: &crate::types::AuditResult) {
+    println!("  {BOLD}Files scanned{RESET}       {}", result.file_count);
+    println!("  {BOLD}Routes found{RESET}        {}", result.route_count);
+    println!("  {BOLD}Symbols indexed{RESET}     {}", result.symbol_count);
+    println!("  {BOLD}Import edges{RESET}        {}", result.import_edge_count);
+    println!("  {BOLD}Findings{RESET}            {}", result.findings_count);
+    if result.quieted_count > 0 {
+        println!(
+            "  {DIM}Quieted{RESET}             {} {DIM}(suppressed by .kshield.yml, a global rule, or a previous dismissal){RESET}",
+            result.quieted_count
+        );
+    }
+
+    if !result.parse_errors.is_empty() {
+        println!(
+            "  {YELLOW}Parse errors{RESET}        {}",
+            result.parse_errors.len()
+        );
+        for (filename, err) in &result.parse_errors {
+            println!("    {DIM}{filename}: {err}{RESET}");
+        }
+    }
+
+    if !result.findings.is_empty() {
+        println!();
+        println!("  {BOLD}Findings{RESET}");
+        for f in &result.findings {
+            println!(
+                "    {}  {DIM}{}:{}{RESET}",
+                severity_badge(&f.severity),
+                f.filename,
+                f.line_number
+            );
+            println!("    {BOLD}{}{RESET}", f.anomaly_type);
+            println!("    {DIM}{}{RESET}", f.description);
+            if !f.remediation.explanation.is_empty() {
+                println!("    {CYAN}↳  {}{RESET}", f.remediation.explanation);
+            }
+            if !f.remediation.patch_diff.is_empty() {
+                println!();
+                for line in f.remediation.patch_diff.lines().take(12) {
+                    let col = if line.starts_with('+') && !line.starts_with("+++") {
+                        GREEN
+                    } else if line.starts_with('-') && !line.starts_with("---") {
+                        RED
+                    } else {
+                        DIM
+                    };
+                    println!("      {col}{line}{RESET}");
+                }
+            }
+            println!("    {DIM}─────────────────────────────────────────{RESET}");
+        }
+    }
+
+    if !result.routes.is_empty() {
+        println!();
+        println!("  {BOLD}Routes{RESET}");
+        for r in &result.routes {
+            let path = if r.path.is_empty() { "(no path literal)" } else { &r.path };
+            println!(
+                "    {CYAN}{:<7}{RESET} {:<28} {DIM}-> {} ({}:{}){RESET}",
+                r.method, path, r.handler, r.filename, r.line
+            );
+        }
+    }
+
+    println!();
+}
+
 pub fn print_backend_warning() {
     println!();
     println!("{YELLOW}{BOLD}  ⚠  KShield backend is not running  {RESET}");
