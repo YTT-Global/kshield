@@ -108,9 +108,7 @@ All branches must fork from `main`.
    cd cli && cargo build && cargo test
 
    # Backend
-   # backend/tests/ is gitignored and not part of the public repo — verify
-   # backend changes by starting the server and exercising the endpoint(s)
-   # you touched (see docs/setup.md), not via an automated suite here.
+   cd backend && SQLITE_FALLBACK=true python -m pytest tests/ -v
 
    # Frontend
    cd frontend && npm run build && npm run lint

@@ -49,7 +49,7 @@ jobs:
           "
         working-directory: backend
       - name: Run tests
-        run: SQLITE_FALLBACK=true python -m pytest tests/ -v || echo "No tests yet"
+        run: SQLITE_FALLBACK=true python -m pytest tests/ -v
         working-directory: backend
 
   # ── Frontend ──────────────────────────────────────────────────────────────────
