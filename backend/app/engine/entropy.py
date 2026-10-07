@@ -70,6 +70,18 @@ def _is_allowlisted(literal: str) -> bool:
     return any(p.match(literal) for p in _ALLOWLIST_RE)
 
 
+def _looks_like_placeholder(matched_text: str) -> bool:
+    """A named-pattern match normally bypasses entropy scoring entirely
+    (real secrets are trusted CRITICAL regardless of shape). But a template
+    value like "sk_test_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" matches the shape
+    while having almost no actual randomness — low character diversity is a
+    reliable, safe signal for this, since a real generated secret is very
+    unlikely to repeat characters this much."""
+    if not matched_text:
+        return False
+    return len(set(matched_text)) / len(matched_text) < 0.3
+
+
 def analyze_entropy_and_secrets(code_data: str) -> List[Dict[str, Any]]:
     findings: List[Dict[str, Any]] = []
     lines = code_data.splitlines()
@@ -79,7 +91,8 @@ def analyze_entropy_and_secrets(code_data: str) -> List[Dict[str, Any]]:
 
         # 1. Named-pattern (signature) check — CRITICAL; suppresses entropy for this line
         for name, pattern in SIGNATURE_REGEX.items():
-            if re.search(pattern, line):
+            match = re.search(pattern, line)
+            if match and not _looks_like_placeholder(match.group(0)):
                 findings.append({
                     "line_number": idx,
                     "anomaly_type": "Hardcoded Secret",

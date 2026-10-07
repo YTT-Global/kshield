@@ -9,4 +9,10 @@ class FalsePositive(Base):
     file_signature = Column(String, nullable=False, index=True)  # MD5/SHA256 file calculation
     rule_id = Column(String, nullable=False, index=True)
     justification = Column(Text, nullable=True)
+    # Normalized template of the dismissed finding's description (quoted
+    # identifiers and file paths stripped) — see quiet_office.py. Deliberately
+    # not an embedding: findings are template-generated text, not free-form
+    # prose, so matching the structural shell is both simpler and more
+    # reliable than cosine similarity on a hash-seeded vector would be.
+    signature = Column(Text, nullable=True, index=True)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)

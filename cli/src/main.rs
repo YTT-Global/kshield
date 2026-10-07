@@ -40,6 +40,12 @@ enum Commands {
         /// Path to the file to scan
         file: std::path::PathBuf,
     },
+    /// Repo-wide audit: scans every git-tracked file at once (not just the diff),
+    /// with graph-aware access-control checks and verified remediation patches.
+    Agent {
+        /// Identifies this run — e.g. the repo name
+        name: String,
+    },
 }
 
 #[tokio::main]
@@ -53,6 +59,7 @@ async fn main() -> Result<()> {
         Commands::Status => cmd_status().await,
         Commands::Hook   => cmd_hook().await,
         Commands::Scan { file } => cmd_scan(file).await,
+        Commands::Agent { name } => cmd_agent(name).await,
     }
 }
 
@@ -279,7 +286,14 @@ async fn cmd_hook() -> Result<()> {
 
 async fn cmd_scan(file: std::path::PathBuf) -> Result<()> {
     let content = std::fs::read_to_string(&file)?;
-    let filename = file.to_string_lossy().to_string();
+    // Canonicalize so the backend's apply-patch file lookup (which runs from a
+    // different process, with its own unrelated cwd) gets an unambiguous path —
+    // a relative path here would be resolved against the wrong directory later.
+    let filename = file
+        .canonicalize()
+        .unwrap_or(file)
+        .to_string_lossy()
+        .to_string();
     let client = Client::new();
 
     if !http::health_check(&client).await {
@@ -299,6 +313,55 @@ async fn cmd_scan(file: std::path::PathBuf) -> Result<()> {
     } else {
         ui::print_clean(1);
     }
+    Ok(())
+}
+
+// ── agent (repo-wide graph audit) ───────────────────────────────────────────────
+
+async fn cmd_agent(name: String) -> Result<()> {
+    let in_git = std::process::Command::new("git")
+        .args(["rev-parse", "--git-dir"])
+        .output()
+        .map(|o| o.status.success())
+        .unwrap_or(false);
+
+    if !in_git {
+        eprintln!("  Not a git repository. Run inside a git repo.");
+        std::process::exit(1);
+    }
+
+    let tracked = scanner::get_tracked_files()?;
+
+    let client = Client::new();
+    if !http::health_check(&client).await {
+        eprintln!("Backend is not running. Start it with: kshield start");
+        std::process::exit(1);
+    }
+
+    ui::print_agent_header(&name, tracked.len());
+
+    let files = tracked
+        .into_iter()
+        .map(|f| types::AuditFile { filename: f.filename, content: f.content })
+        .collect();
+
+    // Real gap found in review: `.kshield.yml` was only ever loaded by
+    // cmd_scan/cmd_hook — `agent` silently ignored it entirely, so a
+    // suppressed rule/severity/path could still show up (and fail the
+    // build) in a repo-wide audit despite being configured to skip it
+    // everywhere else.
+    let suppress = config::load();
+    let result = http::audit_repo(&client, &name, files, suppress).await?;
+    ui::print_audit_summary(&result);
+
+    let has_critical = result
+        .findings
+        .iter()
+        .any(|f| matches!(f.severity.as_str(), "CRITICAL" | "HIGH"));
+    if has_critical {
+        std::process::exit(1);
+    }
+
     Ok(())
 }
 

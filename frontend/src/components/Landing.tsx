@@ -110,15 +110,15 @@ type Severity = 'CRITICAL' | 'HIGH' | 'MEDIUM';
 
 const DETECTIONS: { Icon: React.FC<{ size: number; className: string }>; label: string; severity: Severity; description: string }[] = [
   { Icon: Lock,    label: 'Hardcoded Secrets',        severity: 'CRITICAL', description: '30+ named token patterns — GitHub, AWS, OpenAI, Stripe, Slack and more. Zero false positives on hashes or UUIDs.' },
-  { Icon: Shield,  label: 'Broken Access Control',    severity: 'HIGH',     description: 'Detects FastAPI routes with no authentication guard. Severity scales by HTTP method.' },
+  { Icon: Shield,  label: 'Broken Access Control',    severity: 'HIGH',     description: 'Detects FastAPI routes with no authentication guard — graph-aware across your whole repo, reusing guards proven elsewhere. Severity scales by HTTP method and path sensitivity.' },
   { Icon: Zap,     label: 'AI Hallucinations',        severity: 'MEDIUM',   description: '60+ patterns across placeholders, credential stubs, dead code, and AI generation artifacts. Test files exempt.' },
-  { Icon: Package, label: 'Dependency Hallucinations',severity: 'CRITICAL', description: 'Verifies every import against PyPI, npm, Go proxy, and RubyGems before they ship.' },
+  { Icon: Package, label: 'Dependency Hallucinations',severity: 'CRITICAL', description: 'Verifies every import against PyPI, npm, Go proxy, and RubyGems before they ship — plus typosquat and undeclared-dependency checks in repo-wide audits.' },
 ];
 
 const INSTALL_TABS = [
-  { label: 'curl',      cmd: 'curl -fsSL https://raw.githubusercontent.com/YTT-Global/kshield/main/install.sh | bash' },
+  { label: 'curl',      cmd: 'curl -fsSL https://raw.githubusercontent.com/YTT-Global/kshield/master/install.sh | bash' },
   { label: 'brew',      cmd: 'brew install ytt-global/tap/kshield' },
-  { label: 'npm',       cmd: 'npx kshield init' },
+  { label: 'npm',       cmd: 'npx @ytt-global/kshield init' },
   { label: 'pip',       cmd: 'pip install kshield && kshield-backend &' },
   { label: 'VS Code',   cmd: 'code --install-extension YTTGlobal.kshield-vscode' },
 ];
@@ -134,13 +134,14 @@ const FEATURES = [
   'Local-first — zero data leaves your machine',
   'No Docker required for first run',
   'SQLite by default, PostgreSQL for teams',
-  'Auto-remediation diff patches per finding',
-  'Suppression config via .kshield.yml',
+  'Repo-wide audit — every tracked file in one pass, not just the diff',
+  'Verified auto-remediation — each patch is applied and re-checked before you see it',
+  'Suppression via .kshield.yml, and dismiss-once false-positive memory',
   'React dashboard with live scan telemetry',
-  'Tauri desktop app for native experience',
   'VS Code extension with inline diagnostics',
+  'MCP server — scan and audit from Claude Code or any MCP-aware agent',
   'GitHub Actions CI integration built-in',
-  'Homebrew · npm · pip · curl · VS Code install paths',
+  'Homebrew · npm · pip · curl · VS Code install paths (Windows: beta)',
 ];
 
 // ── Landing ──────────────────────────────────────────────────────────────────
@@ -167,7 +168,7 @@ export const Landing: React.FC = () => {
           <div className="flex items-center gap-3">
             <KShieldLogo size={26} />
             <span className="font-bold tracking-widest uppercase text-sm">KShield</span>
-            <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700 px-1.5 py-0.5 rounded">v1.1.0</span>
+            <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700 px-1.5 py-0.5 rounded">v1.2.0</span>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -210,15 +211,15 @@ export const Landing: React.FC = () => {
             </div>
 
             <h1 className="text-4xl sm:text-5xl lg:text-[52px] font-black leading-[1.08] tracking-tight mb-6">
-              The pre-commit<br />
+              The local-first<br />
               <span className="text-red-500">security firewall</span><br />
               for developers.
             </h1>
 
             <p className="text-lg text-slate-600 dark:text-slate-400 leading-relaxed mb-8 max-w-lg">
               Catches hardcoded secrets, broken access control, AI hallucinations,
-              and supply-chain risks — entirely on your machine, before a single line
-              reaches your remote.
+              and supply-chain risks on every commit or across your whole repo.
+              It fixes what it finds and verifies the fix — all on your machine.
             </p>
 
             <div className="flex flex-wrap gap-3">
