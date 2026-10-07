@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "kshield"
-version = "1.1.0"
+version = "1.2.0"
 description = "Local-first AI code review firewall — catches secrets, broken access control, and AI hallucinations before they reach your main branch."
 readme = "README.md"
 license = { text = "MIT" }
@@ -35,7 +35,7 @@ dependencies = [
 
 [project.urls]
 Homepage = "https://github.com/YTT-Global/kshield"
-Documentation = "https://github.com/YTT-Global/kshield/blob/main/docs/setup.md"
+Documentation = "https://github.com/YTT-Global/kshield/blob/master/docs/setup.md"
 Issues = "https://github.com/YTT-Global/kshield/issues"
 
 [project.scripts]

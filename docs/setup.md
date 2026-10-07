@@ -8,7 +8,7 @@ Complete instructions for running KShield — from first install through full pr
 
 | Tool | Minimum | Required for |
 |---|---|---|
-| macOS or Linux | — | Binary install (Windows not yet supported) |
+| macOS or Linux | — | Binary install (`curl \| bash`, Homebrew). Windows: use `npx @ytt-global/kshield` or the release `.zip` — beta, not yet verified on real Windows hardware |
 | Python | 3.10 | Backend (auto-installed by `kshield setup`) |
 | Node.js | 20 | Frontend development only |
 | Rust | 1.78 | Building the CLI from source only |
@@ -19,7 +19,7 @@ Complete instructions for running KShield — from first install through full pr
 ## Quick Install (Recommended)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/YTT-Global/kshield/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/YTT-Global/kshield/master/install.sh | bash
 ```
 
 Then inside any git repo:
@@ -36,7 +36,7 @@ That's it. The backend is downloaded, a Python venv is created, the database is 
 
 ### curl | bash
 ```bash
-curl -fsSL https://raw.githubusercontent.com/YTT-Global/kshield/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/YTT-Global/kshield/master/install.sh | bash
 ```
 Downloads a pre-built binary for your platform and installs it to `/usr/local/bin`.
 

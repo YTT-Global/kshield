@@ -28,7 +28,7 @@ Pick any one — they all end up at the same binary and the same experience:
 
 **macOS / Linux (recommended):**
 ```bash
-curl -fsSL https://raw.githubusercontent.com/YTT-Global/kshield/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/YTT-Global/kshield/master/install.sh | bash
 ```
 
 **Homebrew (macOS):**
@@ -331,6 +331,20 @@ See [vscode-extension/README.md](vscode-extension/README.md) for settings and co
 
 ---
 
+## MCP Server
+
+`mcp-server/` exposes the local backend as MCP tools so MCP-aware agents (Claude Code, Claude Desktop) can scan a file, run a repo-wide audit, apply a remediation patch, or manage suppressions without shelling out to the CLI. It is a thin client over the same local API — start the backend first (`kshield start`).
+
+```bash
+claude mcp add kshield -- uv run --no-project \
+  --with "mcp[cli]>=1.2.0" --with "httpx>=0.27" \
+  python3 /path/to/kshield/mcp-server/server.py
+```
+
+Tools: `kshield_health`, `kshield_scan_file`, `kshield_audit_repo`, `kshield_list_scan_history`, `kshield_list_audit_runs`, `kshield_dismiss_finding`, `kshield_apply_patch` (writes to disk), `kshield_list_suppressed_rules`, `kshield_suppress_rule`, `kshield_unsuppress_rule`. See [mcp-server/README.md](mcp-server/README.md).
+
+---
+
 ## Managed Directory
 
 After `kshield setup` or `kshield init`, the following is created in your home directory:
@@ -393,7 +407,8 @@ The backend exposes a REST API at `http://localhost:8000`. Full reference is ava
 | `GET` | `/api/v1/audit/runs` | List past `kshield agent` runs, ranked by severity |
 | `GET` | `/api/v1/scans` | List past single-file scans |
 | `GET` | `/api/v1/telemetry` | Aggregate scan/finding counts for the dashboard |
-| `POST` | `/api/v1/suppress` | Globally suppress a rule type |
+| `GET`/`POST` | `/api/v1/suppress` | List / globally suppress a rule type |
+| `DELETE` | `/api/v1/suppress/{rule_type}` | Remove a global rule suppression |
 | `POST` | `/api/v1/apply-patch` | Apply a finding's verified remediation patch directly to the file on disk |
 | `GET`/`POST` | `/api/v1/patterns/auth-keywords` | List / teach project-specific auth-guard names — e.g. `verify_org_membership` — so `access_control.py` stops flagging routes that already use them |
 
@@ -420,7 +435,8 @@ The backend exposes a REST API at `http://localhost:8000`. Full reference is ava
 - [x] Verified auto-remediation (ksword) — every patch is applied and re-checked before it's shown, not fabricated
 - [ ] Extend ksword's access-control fix to reuse guards across the whole repo graph, not just the same file
 - [ ] Real semantic embeddings — the pgvector column exists but isn't populated with a meaningful vector yet
-- [ ] Windows support
+- [x] MCP server — scan, audit and remediation as tools for MCP-aware agents
+- [ ] Windows support — release target and npm installer exist; not yet verified on real Windows hardware
 - [ ] Tauri desktop build packaging
 
 ---

@@ -241,7 +241,7 @@ Developer
 6. Backend pipeline runs in sequence:
    a. Regex/entropy scanner     → hardcoded secrets, high-entropy strings
    b. AST engine                → broken access control, syntax violations
-   c. ML classifier             → AI hallucination placeholder patterns
+   c. Pattern classifier        → AI hallucination placeholder patterns (regex-based, no ML model)
    d. Hallucination guard       → PyPI / npm / Go proxy / RubyGems verification
    e. ksword                    → proposes a patch, applies it in-memory, re-runs the
                                    check that raised the finding, and only returns the

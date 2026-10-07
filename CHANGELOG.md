@@ -4,6 +4,8 @@ All notable changes to KShield are documented here.
 
 ## [Unreleased]
 
+## [1.2.0] — 2026-10-07
+
 ### Added
 - **Repo-wide audit** (`kshield agent <name>`, `POST /api/v1/audit`): scans every git-tracked file in one pass instead of just the staged diff.
   - `graph_builder.py` builds a full repo graph (imports, symbols, every route with its guards, parse errors) before any check runs.
@@ -22,9 +24,16 @@ All notable changes to KShield are documented here.
 - `kshield-vscode` is now live on the VS Code Marketplace as [`YTTGlobal.kshield-vscode`](https://marketplace.visualstudio.com/items?itemName=YTTGlobal.kshield-vscode). Docs updated to lead with `code --install-extension YTTGlobal.kshield-vscode` ahead of the manual `.vsix` build steps.
 - **Windows release target** (`x86_64-pc-windows-msvc`): `release.yml`'s build matrix now includes a native `windows-latest` runner alongside the existing macOS/Linux targets, producing a `.zip` (the other targets ship `.tar.gz`). The Rust CLI already had real Windows branches from day one (`USERPROFILE` fallback for the home directory, `venv/Scripts/python.exe` vs `venv/bin/python`) — they'd just never been built or shipped. Cross-compiled locally via `x86_64-pc-windows-gnu` + mingw-w64 as a smoke test before wiring up the CI target; **not yet verified on a real Windows machine**, so treat this release's Windows binary as best-effort until someone reports back. `npm/scripts/install.js` and `npm/bin/kshield.js` now detect `win32` and handle the `.exe`/`.zip` difference; `install.sh` (bash-only) now fails fast with a clear pointer to the npm path instead of silently mis-downloading a `.tar.gz` under Git Bash/MSYS.
 
+### Changed
+- The dashboard and landing page now default to the light theme (a previously stored dark preference is still honored).
+- Landing page and in-app docs brought in line with this release: new headline ("The local-first security firewall for developers"), `kshield agent` and the Typosquat / Undeclared Dependency rules documented, a new `POST /api/v1/audit` API section, MCP server and VS Code extension listed, and the scoped npm command. The README gains an MCP Server section and the missing `/api/v1/suppress` endpoints. Removed the "Tauri desktop app" claim from the landing page — packaging is still unfinished.
+
 ### Fixed
+- **The documented `curl … install.sh | bash` command returned 404 everywhere.** README, `docs/setup.md`, the in-app docs and landing page, `release.yml`'s release notes, and the `pyproject.toml` / VS Code extension links all pointed at a `main` branch that doesn't exist — the default branch is `master`. All now point at `master`.
+- Version numbers were out of sync across the project (`frontend` and `src-tauri` at 1.0.0, the CLI/PyPI/npm packages at 1.1.0, and `backend/kshield_backend/__init__.py` — which ships in the PyPI package — still at 1.0.0). Everything is now 1.2.0.
+- `docs/architecture.md` described the AI-hallucination check as an "ML classifier"; it is regex-based, and now says so.
 - **The npm package name `kshield` was squatted** by an unrelated third-party CLI (`kidshield`) — `npx kshield init`, as documented everywhere, silently ran someone else's tool instead of failing loudly. Renamed the package to the scoped `@ytt-global/kshield`; the installed command is still `kshield` (the `bin` field is unchanged), only the install/npx invocation changes. Every reference (`README.md`, `docs/setup.md`, `docs/features.md`, `install.sh`'s error text, the release-notes template, the npm package's own error/warning strings) updated to match.
-- **`backend/tests/` is intentionally gitignored, not shipped in the public repo.** This audit-engine work is backed by a 186-test local suite (`test_access_control.py`, `test_ksword.py`, `test_orchestrator.py`, and six others) — all passing — but the test files themselves aren't committed. Practical effect: CI's `pytest tests/ || echo "No tests yet"` step reports "No tests yet" on every run, and a fresh clone has no test suite to run at all. `CONTRIBUTING.md`'s testing section reflects this.
+- **The backend test suite is now part of the repo, and CI actually runs it.** `backend/tests/` (186 tests covering access control, ksword remediation, the orchestrator, dependency audit, the graph builder and the audit API) was gitignored, and CI's `pytest tests/ || echo "No tests yet"` step reported success on every run regardless of what happened. The tests are committed, `backend/tests/` is no longer ignored, and the CI step fails when a test fails. `CONTRIBUTING.md`'s testing section has the command.
 - `remediation.py`'s Broken Access Control patch referenced symbols (`AuthenticationGuard`, `app`) that didn't exist in the target file and could corrupt it when applied via `git apply` — this was the entire reason for the ksword rewrite above. All finding types other than Broken Access Control previously returned no patch at all (an empty `patch_diff`), even where a safe automated fix was possible.
 - `.github/workflows/ci.yml`'s backend import-sanity step still referenced the now-deleted `app.engine.remediation` module.
 - README's CI badge pointed at a workflow file (`kshield-ci.yml`) that doesn't exist — the real workflow is `ci.yml`.

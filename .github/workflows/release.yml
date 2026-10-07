@@ -145,7 +145,7 @@ jobs:
 
             **macOS / Linux — one command:**
             ```bash
-            curl -fsSL https://raw.githubusercontent.com/${{ github.repository }}/main/install.sh | bash
+            curl -fsSL https://raw.githubusercontent.com/${{ github.repository }}/master/install.sh | bash
             ```
 
             **Homebrew (macOS):**
@@ -176,7 +176,7 @@ jobs:
 
             ---
 
-            See [CHANGELOG](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for what's new.
+            See [CHANGELOG](https://github.com/${{ github.repository }}/blob/master/CHANGELOG.md) for what's new.
           files: |
             dist/*.tar.gz
             dist/*.zip

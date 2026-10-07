@@ -105,5 +105,6 @@ Listed here deliberately, not buried — these are the gaps that matter most for
 - **No cross-repo/cross-service auth awareness.** Guard-reuse (both in detection and in `ksword`'s remediation) is scoped to what's visible in the single file or single repo being scanned — a shared auth dependency imported from a separate internal library won't be recognized unless its name happens to match the auth-keyword list.
 - **Similarity search is not real yet.** The `vulnerabilities.embedding` pgvector column is populated with an MD5-seeded random vector, not a real embedding — any cosine-similarity feature built on it today would be comparing structured noise, not semantic meaning.
 - **PR-scan CI doesn't use the stronger engine.** `ci.yml`'s `pr-scan` job calls per-file `/api/v1/scan`, missing the cross-file guard-reuse and sensitive-path escalation that `/api/v1/audit` (and therefore `kshield agent`) has.
-- **No Windows support.** No Rust unit tests either — CLI correctness currently relies entirely on manual/live verification, not an automated regression suite for `cli/`.
+- **Windows is a release target but unverified.** The `x86_64-pc-windows-msvc` binary is built in CI and was smoke-tested only via cross-compilation — nobody has run it on real Windows hardware yet. Treat it as beta.
+- **No Rust unit tests.** `cli/` has no `#[test]` functions, so CI's `cargo test` step runs zero tests — CLI correctness relies on manual/live verification, not an automated regression suite.
 - **Tauri desktop packaging is unfinished.**

@@ -23,7 +23,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="KShield Engine",
-    version="1.0.0",
+    version="1.2.0",
     description="Local-first engine to detect code mutations, hallucinations, and security flaws.",
     lifespan=lifespan
 )
